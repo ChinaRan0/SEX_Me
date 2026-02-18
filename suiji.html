@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>情趣随机</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 30px 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .task-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #ff6b6b;
+            margin-bottom: 15px;
+            text-align: center;
+            min-height: 32px;
+        }
+
+        .task-description {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #e0e0e0;
+            text-align: center;
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 80px;
+        }
+
+        .btn-random {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            border: none;
+            border-radius: 50px;
+            padding: 18px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-random:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-random.rolling {
+            animation: pulse 0.3s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .btn-icon {
+            font-size: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-random.rolling .btn-icon {
+            animation: spin 0.3s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .placeholder-text {
+            color: #666;
+            font-size: 16px;
+        }
+
+        /* 滚动动画 */
+        .rolling-text {
+            animation: textRoll 0.1s ease infinite;
+        }
+
+        @keyframes textRoll {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* 底部安全区 */
+        .safe-area-bottom {
+            height: env(safe-area-inset-bottom, 20px);
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">‹</a>
+    <div class="container">
+        <header>
+            <h1>情趣随机</h1>
+            <p>点击按钮，开启浪漫之旅</p>
+        </header>
+
+        <div class="card">
+            <div class="task-title" id="taskTitle">
+                <span class="placeholder-text">等待抽取...</span>
+            </div>
+            <div class="task-description" id="taskDescription">
+                <span class="placeholder-text">准备好开启今晚的浪漫了吗？</span>
+            </div>
+        </div>
+
+        <button class="btn-random" id="btnRandom" onclick="randomTask()">
+            <span class="btn-icon">🎲</span>
+            <span>随机抽取</span>
+        </button>
+
+        <div class="safe-area-bottom"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const presetCode = urlParams.get('code');
+
+        let tasks = [];
+        let preset = null;
+        let currentRound = 0;
+        let isRolling = false;
+
+        // 设置返回按钮行为
+        function setupBackButton() {
+            const backBtn = document.querySelector('.back-btn');
+            if (!backBtn) return;
+
+            backBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // 优先返回上一页
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else if (presetCode) {
+                    // 无历史时，返回带 code 的首页
+                    window.location.href = `index.html?code=${presetCode}`;
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+        }
+
+        // 加载数据
+        async function loadTasks() {
+            // 先加载基础任务数据
+            try {
+                const response = await fetch(`${API_BASE}/tasks`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const result = await response.json();
+                if (result.success) {
+                    tasks = result.data;
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                tasks = [
+                    { description: "深情对视3分钟，不许说话，只能用眼神交流" },
+                    { description: "为伴侣按摩肩颈和背部15分钟" }
+                ];
+            }
+
+            // 如果有预设码，静默加载预设（不改变界面）
+            if (presetCode) {
+                try {
+                    const response = await fetch(`${API_BASE}/preset/${presetCode}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data.success) {
+                        preset = data.data;
+                        // 从 localStorage 恢复当前轮次
+                        const savedRound = localStorage.getItem(`preset_round_${presetCode}_task`);
+                        currentRound = savedRound ? parseInt(savedRound) : 0;
+                    }
+                } catch (e) {
+                    console.error('加载预设失败:', e);
+                }
+            }
+        }
+
+        // 随机抽取任务
+        function randomTask() {
+            if (isRolling || tasks.length === 0) return;
+
+            const btn = document.getElementById('btnRandom');
+            const titleEl = document.getElementById('taskTitle');
+            const descEl = document.getElementById('taskDescription');
+
+            isRolling = true;
+            btn.classList.add('rolling');
+
+            // 决定结果（如果预设则使用预设）
+            let finalTask;
+            if (preset && preset.rounds_data && currentRound < preset.rounds_data.length) {
+                // 静默使用预设结果
+                finalTask = { description: preset.rounds_data[currentRound].task_description };
+                currentRound++;
+                // 保存轮次状态到 localStorage
+                if (presetCode) {
+                    localStorage.setItem(`preset_round_${presetCode}_task`, currentRound.toString());
+                }
+            } else {
+                // 随机结果（超轮随机）
+                finalTask = tasks[Math.floor(Math.random() * tasks.length)];
+            }
+
+            // 滚动动画效果
+            let rollCount = 0;
+            const maxRolls = 10;
+            const rollInterval = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * tasks.length);
+                const task = tasks[randomIndex];
+
+                titleEl.innerHTML = '抽取中...';
+                titleEl.classList.add('rolling-text');
+                descEl.innerHTML = task.description;
+                descEl.classList.add('rolling-text');
+
+                rollCount++;
+
+                if (rollCount >= maxRolls) {
+                    clearInterval(rollInterval);
+
+                    // 最终结果
+                    titleEl.classList.remove('rolling-text');
+                    descEl.classList.remove('rolling-text');
+
+                    titleEl.innerHTML = '你的任务';
+                    descEl.innerHTML = finalTask.description;
+
+                    isRolling = false;
+                    btn.classList.remove('rolling');
+
+                    // 震动反馈
+                    if (navigator.vibrate) {
+                        navigator.vibrate(100);
+                    }
+                }
+            }, 100);
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTasks();
+            setupBackButton();
+        });
+    </script>
+</body>
+</html>

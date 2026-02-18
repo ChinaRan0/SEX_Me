@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>随机性爱姿势</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .dice-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 30px;
+            padding: 15px 0;
+        }
+
+        .dice-section {
+            width: 100%;
+        }
+
+        .dice-label {
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .dice-viewport {
+            position: relative;
+            width: 100%;
+            height: 80px;
+            overflow: hidden;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 左右渐变遮罩 */
+        .dice-viewport::before,
+        .dice-viewport::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 50px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .dice-viewport::before {
+            left: 0;
+            background: linear-gradient(to right, rgba(0,0,0,0.7), transparent);
+        }
+
+        .dice-viewport::after {
+            right: 0;
+            background: linear-gradient(to left, rgba(0,0,0,0.7), transparent);
+        }
+
+        /* 中间指示器 */
+        .dice-viewport .indicator {
+            position: absolute;
+            left: 50%;
+            top: 5px;
+            bottom: 5px;
+            width: 100px;
+            transform: translateX(-50%);
+            border: 2px solid #ff6b6b;
+            border-radius: 12px;
+            pointer-events: none;
+            z-index: 5;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.4);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .dice-viewport.stopped .indicator {
+            opacity: 1;
+        }
+
+        .dice-track {
+            display: flex;
+            flex-direction: row;
+            height: 100%;
+            align-items: center;
+            will-change: transform;
+        }
+
+        .dice-item {
+            flex-shrink: 0;
+            width: 90px;
+            height: 70px;
+            margin: 0 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            font-weight: 600;
+            color: #ccc;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+            text-align: center;
+            padding: 5px;
+            line-height: 1.3;
+        }
+
+        .dice-item.selected {
+            background: linear-gradient(145deg, #ff6b6b, #ff8e8e);
+            color: #fff;
+            box-shadow: 0 0 25px rgba(255, 107, 107, 0.6);
+        }
+
+        .result-display {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+
+        .result-display.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-text {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ff6b6b, #ffa07a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 15px;
+        }
+
+        .result-hint {
+            font-size: 14px;
+            color: #888;
+        }
+
+        .btn-show-action {
+            background: #4a90a4;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .btn-show-action.show {
+            display: inline-block;
+        }
+
+        .btn-show-action:active {
+            transform: scale(0.95);
+        }
+
+        .btn-roll {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            border: none;
+            border-radius: 50px;
+            padding: 18px 50px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 280px;
+            margin: 0 auto;
+        }
+
+        .btn-roll:active {
+            transform: scale(0.95);
+        }
+
+        .btn-roll.rolling {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .btn-icon {
+            font-size: 20px;
+        }
+
+        .safe-area-bottom {
+            height: env(safe-area-inset-bottom, 20px);
+        }
+
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #2d2d44 0%, #1a1a2e 100%);
+            border-radius: 20px;
+            max-width: 400px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .modal-body {
+            padding: 20px;
+            overflow-y: auto;
+            max-height: 60vh;
+        }
+
+        .action-image {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 15px;
+        }
+
+        .action-placeholder {
+            width: 100%;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .action-description {
+            color: #aaa;
+            font-size: 14px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-close {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 12px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-close:active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .no-action-tip {
+            color: #666;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">‹</a>
+    <div class="container">
+        <header>
+            <h1>随机性爱姿势</h1>
+            <p>抽个签，探索新玩法</p>
+        </header>
+
+        <div class="dice-container">
+            <!-- 地点骰子 -->
+            <div class="dice-section">
+                <div class="dice-label"><span>📍</span> 地点</div>
+                <div class="dice-viewport" id="placeViewport">
+                    <div class="indicator"></div>
+                    <div class="dice-track" id="placeTrack"></div>
+                </div>
+            </div>
+
+            <!-- 姿势骰子 -->
+            <div class="dice-section">
+                <div class="dice-label"><span>💑</span> 姿势</div>
+                <div class="dice-viewport" id="poseViewport">
+                    <div class="indicator"></div>
+                    <div class="dice-track" id="poseTrack"></div>
+                </div>
+            </div>
+
+            <!-- 时间骰子 -->
+            <div class="dice-section">
+                <div class="dice-label"><span>⏱️</span> 时间</div>
+                <div class="dice-viewport" id="timeViewport">
+                    <div class="indicator"></div>
+                    <div class="dice-track" id="timeTrack"></div>
+                </div>
+            </div>
+
+            <!-- 结果显示 -->
+            <div class="result-display" id="resultDisplay">
+                <div class="result-text" id="resultText"></div>
+                <button class="btn-show-action" id="btnShowAction" onclick="showActionModal()">
+                    <span>📖 查看姿势图解</span>
+                </button>
+                <div class="result-hint">尽情享受吧~</div>
+            </div>
+
+            <button class="btn-roll" id="btnRoll" onclick="rollDice()">
+                <span class="btn-icon">🎰</span>
+                <span id="btnText">抽签</span>
+            </button>
+        </div>
+
+        <div class="safe-area-bottom"></div>
+    </div>
+
+    <!-- 动作图弹窗 -->
+    <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <div class="modal-title" id="modalTitle">姿势图解</div>
+            </div>
+            <div class="modal-body">
+                <div id="actionImageContainer">
+                    <div class="action-placeholder">暂无图解</div>
+                </div>
+                <div class="action-description" id="actionDescription"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-close" onclick="closeModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const presetCode = urlParams.get('code');
+
+        let places = [];
+        let poses = [];
+        let times = [];
+        let actionConfig = {};
+        let preset = null;
+        let currentRound = 0;
+        let isRolling = false;
+        let currentPose = '';
+        const ITEM_WIDTH = 100; // 90px width + 10px margin
+
+        // 设置返回按钮行为
+        function setupBackButton() {
+            const backBtn = document.querySelector('.back-btn');
+            if (!backBtn) return;
+
+            backBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // 优先返回上一页
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else if (presetCode) {
+                    // 无历史时，返回带 code 的首页
+                    window.location.href = `index.html?code=${presetCode}`;
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+        }
+
+        // 加载数据
+        async function loadData() {
+            // 先加载基础数据
+            try {
+                const response = await fetch(`${API_BASE}/poses`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const result = await response.json();
+                if (result.success) {
+                    places = result.data.places;
+                    poses = result.data.poses;
+                    times = result.data.times;
+                    actionConfig = result.data.poseDetails || {};
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                places = ["床上", "沙发", "浴室", "阳台", "地毯"];
+                poses = ["传教士", "后入式", "女上位", "侧入式", "站立式"];
+                times = ["5分钟", "10分钟", "15分钟", "20分钟", "30分钟"];
+            }
+
+            // 如果有预设码，静默加载预设（不改变界面）
+            if (presetCode) {
+                try {
+                    const response = await fetch(`${API_BASE}/preset/${presetCode}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data.success) {
+                        preset = data.data;
+                        // 从 localStorage 恢复当前轮次
+                        const savedRound = localStorage.getItem(`preset_round_${presetCode}_pose`);
+                        currentRound = savedRound ? parseInt(savedRound) : 0;
+                        // 合并预设中的姿势详情
+                        preset.rounds_data?.forEach(r => {
+                            if (r.pose_name && (r.pose_image || r.pose_description)) {
+                                actionConfig[r.pose_name] = {
+                                    image: r.pose_image,
+                                    description: r.pose_description
+                                };
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('加载预设失败:', e);
+                }
+            }
+
+            // 确保 DOM 完全渲染后再初始化
+            requestAnimationFrame(() => {
+                initDice();
+            });
+        }
+
+        // 初始化骰子
+        function initDice() {
+            createDiceTrack('placeTrack', places);
+            createDiceTrack('poseTrack', poses);
+            createDiceTrack('timeTrack', times);
+        }
+
+        // 创建骰子轨道
+        function createDiceTrack(trackId, items) {
+            const track = document.getElementById(trackId);
+            const viewport = track.parentElement;
+
+            // 确保 viewport 宽度有效
+            const viewportWidth = viewport.offsetWidth || window.innerWidth - 40;
+
+            // 创建足够多的重复项实现无限滚动
+            const repeatCount = 30;
+            let html = '';
+
+            for (let i = 0; i < repeatCount; i++) {
+                items.forEach((item, idx) => {
+                    html += `<div class="dice-item">${item}</div>`;
+                });
+            }
+
+            track.innerHTML = html;
+
+            // 定位到中间位置（第 15 组的第一个元素居中）
+            const middleGroup = Math.floor(repeatCount / 2);
+            const targetItemIndex = middleGroup * items.length;
+            const offset = viewportWidth / 2 - (targetItemIndex * ITEM_WIDTH + ITEM_WIDTH / 2);
+            track.dataset.baseOffset = offset;
+            track.style.transform = `translateX(${offset}px)`;
+        }
+
+        // 获取当前的 translateX 值
+        function getTranslateX(element) {
+            const style = window.getComputedStyle(element);
+            const matrix = style.transform;
+            if (matrix === 'none') return 0;
+
+            const values = matrix.match(/matrix.*\((.+)\)/)[1].split(', ');
+            return parseFloat(values[4]) || 0;
+        }
+
+        // 掷骰子
+        function rollDice() {
+            if (isRolling) return;
+
+            isRolling = true;
+            const btn = document.getElementById('btnRoll');
+            const btnText = document.getElementById('btnText');
+            btn.classList.add('rolling');
+            btnText.textContent = '滚动中...';
+
+            // 隐藏结果和指示器
+            document.getElementById('resultDisplay').classList.remove('show');
+            document.getElementById('btnShowAction').classList.remove('show');
+            document.getElementById('placeViewport').classList.remove('stopped');
+            document.getElementById('poseViewport').classList.remove('stopped');
+            document.getElementById('timeViewport').classList.remove('stopped');
+
+            const placeTrack = document.getElementById('placeTrack');
+            const poseTrack = document.getElementById('poseTrack');
+            const timeTrack = document.getElementById('timeTrack');
+            const placeViewport = document.getElementById('placeViewport');
+            const poseViewport = document.getElementById('poseViewport');
+            const timeViewport = document.getElementById('timeViewport');
+
+            // 移除之前的高亮
+            document.querySelectorAll('.dice-item.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            // 随机选择结果（如果预设则使用预设）
+            let placeIndex, poseIndex, timeIndex;
+
+            if (preset && preset.rounds_data && currentRound < preset.rounds_data.length) {
+                // 静默使用预设结果
+                const round = preset.rounds_data[currentRound];
+                placeIndex = places.indexOf(round.place_name);
+                poseIndex = poses.indexOf(round.pose_name);
+                timeIndex = times.indexOf(round.time_name);
+                // 如果找不到，随机选
+                if (placeIndex < 0) placeIndex = Math.floor(Math.random() * places.length);
+                if (poseIndex < 0) poseIndex = Math.floor(Math.random() * poses.length);
+                if (timeIndex < 0) timeIndex = Math.floor(Math.random() * times.length);
+                currentRound++;
+                // 保存轮次状态到 localStorage
+                if (presetCode) {
+                    localStorage.setItem(`preset_round_${presetCode}_pose`, currentRound.toString());
+                }
+            } else {
+                // 超轮随机
+                placeIndex = Math.floor(Math.random() * places.length);
+                poseIndex = Math.floor(Math.random() * poses.length);
+                timeIndex = Math.floor(Math.random() * times.length);
+            }
+
+            // 保存当前姿势
+            currentPose = poses[poseIndex];
+
+            // 动画参数
+            const duration = 2000 + Math.random() * 1000;
+            const viewportWidth = placeViewport.offsetWidth || window.innerWidth - 40;
+
+            // 随机转动圈数 (3-6圈)
+            const placeSpins = Math.floor(Math.random() * 4) + 3;
+            const poseSpins = Math.floor(Math.random() * 4) + 3;
+            const timeSpins = Math.floor(Math.random() * 4) + 3;
+
+            // 计算目标元素索引
+            const placeTargetIdx = placeSpins * places.length + placeIndex;
+            const poseTargetIdx = poseSpins * poses.length + poseIndex;
+            const timeTargetIdx = timeSpins * times.length + timeIndex;
+
+            // 直接计算让目标元素居中的 translateX
+            const placeTargetX = viewportWidth / 2 - (placeTargetIdx * ITEM_WIDTH + ITEM_WIDTH / 2);
+            const poseTargetX = viewportWidth / 2 - (poseTargetIdx * ITEM_WIDTH + ITEM_WIDTH / 2);
+            const timeTargetX = viewportWidth / 2 - (timeTargetIdx * ITEM_WIDTH + ITEM_WIDTH / 2);
+
+            const placeStartX = getTranslateX(placeTrack);
+            const poseStartX = getTranslateX(poseTrack);
+            const timeStartX = getTranslateX(timeTrack);
+
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                let progress = Math.min(elapsed / duration, 1);
+
+                // 缓动函数 - 先快后慢
+                const easeOut = 1 - Math.pow(1 - progress, 4);
+
+                const placeX = placeStartX + (placeTargetX - placeStartX) * easeOut;
+                const poseX = poseStartX + (poseTargetX - poseStartX) * easeOut;
+                const timeX = timeStartX + (timeTargetX - timeStartX) * easeOut;
+
+                placeTrack.style.transform = `translateX(${placeX}px)`;
+                poseTrack.style.transform = `translateX(${poseX}px)`;
+                timeTrack.style.transform = `translateX(${timeX}px)`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    // 确保最终位置精确
+                    placeTrack.style.transform = `translateX(${placeTargetX}px)`;
+                    poseTrack.style.transform = `translateX(${poseTargetX}px)`;
+                    timeTrack.style.transform = `translateX(${timeTargetX}px)`;
+                    finishRoll(placeIndex, poseIndex, timeIndex,
+                               placeTargetX, poseTargetX, timeTargetX, viewportWidth);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // 完成掷骰
+        function finishRoll(placeIndex, poseIndex, timeIndex,
+                           placeX, poseX, timeX, viewportWidth) {
+            const placeViewport = document.getElementById('placeViewport');
+            const poseViewport = document.getElementById('poseViewport');
+            const timeViewport = document.getElementById('timeViewport');
+
+            // 显示指示器
+            placeViewport.classList.add('stopped');
+            poseViewport.classList.add('stopped');
+            timeViewport.classList.add('stopped');
+
+            // 高亮选中的项目
+            const placeTrack = document.getElementById('placeTrack');
+            const poseTrack = document.getElementById('poseTrack');
+            const timeTrack = document.getElementById('timeTrack');
+
+            // 计算中心位置对应的元素索引
+            const centerOffset = viewportWidth / 2;
+            const placeCenterIdx = Math.round((centerOffset - ITEM_WIDTH / 2 - placeX) / ITEM_WIDTH);
+            const poseCenterIdx = Math.round((centerOffset - ITEM_WIDTH / 2 - poseX) / ITEM_WIDTH);
+            const timeCenterIdx = Math.round((centerOffset - ITEM_WIDTH / 2 - timeX) / ITEM_WIDTH);
+
+            const placeItems = placeTrack.querySelectorAll('.dice-item');
+            const poseItems = poseTrack.querySelectorAll('.dice-item');
+            const timeItems = timeTrack.querySelectorAll('.dice-item');
+
+            if (placeItems[placeCenterIdx]) placeItems[placeCenterIdx].classList.add('selected');
+            if (poseItems[poseCenterIdx]) poseItems[poseCenterIdx].classList.add('selected');
+            if (timeItems[timeCenterIdx]) timeItems[timeCenterIdx].classList.add('selected');
+
+            // 显示结果
+            const resultDisplay = document.getElementById('resultDisplay');
+            const resultText = document.getElementById('resultText');
+            resultText.textContent = `在${places[placeIndex]} · ${poses[poseIndex]} · ${times[timeIndex]}`;
+            resultDisplay.classList.add('show');
+
+            // 检查是否有动作图配置
+            if (actionConfig[poses[poseIndex]] && (actionConfig[poses[poseIndex]].image || actionConfig[poses[poseIndex]].description)) {
+                document.getElementById('btnShowAction').classList.add('show');
+            }
+
+            // 恢复按钮
+            const btn = document.getElementById('btnRoll');
+            const btnText = document.getElementById('btnText');
+            btn.classList.remove('rolling');
+            btnText.textContent = '再抽一次';
+
+            // 震动反馈
+            if (navigator.vibrate) {
+                navigator.vibrate([50, 50, 100]);
+            }
+
+            isRolling = false;
+        }
+
+        // 显示动作图弹窗
+        function showActionModal() {
+            const config = actionConfig[currentPose];
+            if (!config) return;
+
+            const modal = document.getElementById('modalOverlay');
+            const title = document.getElementById('modalTitle');
+            const imageContainer = document.getElementById('actionImageContainer');
+            const description = document.getElementById('actionDescription');
+
+            title.textContent = currentPose + ' - 图解';
+
+            if (config.image) {
+                imageContainer.innerHTML = `<img class="action-image" src="${config.image}" alt="${currentPose}" onerror="this.parentElement.innerHTML='<div class=\\'action-placeholder\\'>图片加载失败</div>'">`;
+            } else {
+                imageContainer.innerHTML = '<div class="action-placeholder">暂无图解</div>';
+            }
+
+            if (config.description) {
+                description.textContent = config.description;
+                description.style.display = 'block';
+            } else {
+                description.style.display = 'none';
+            }
+
+            modal.classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 关闭弹窗
+        function closeModal(event) {
+            if (event && event.target !== document.getElementById('modalOverlay')) return;
+
+            const modal = document.getElementById('modalOverlay');
+            modal.classList.remove('show');
+            document.body.style.overflow = '';
+        }
+
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            setupBackButton();
+        });
+    </script>
+</body>
+</html>

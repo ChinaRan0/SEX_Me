@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>情趣骰子</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* 模式切换 */
+        .mode-switch {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 10px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 25px;
+            color: #888;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            border-color: transparent;
+            color: #fff;
+        }
+
+        .dice-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 50px;
+            padding: 20px 0;
+        }
+
+        .dice-container.hidden {
+            display: none;
+        }
+
+        .dice-section {
+            width: 100%;
+        }
+
+        .dice-label {
+            text-align: center;
+            font-size: 14px;
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        .dice-viewport {
+            position: relative;
+            width: 100%;
+            height: 100px;
+            overflow: hidden;
+            border-radius: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+
+        /* 左右渐变遮罩 */
+        .dice-viewport::before,
+        .dice-viewport::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 50px;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .dice-viewport::before {
+            left: 0;
+            background: linear-gradient(to right, rgba(0,0,0,0.7), transparent);
+        }
+
+        .dice-viewport::after {
+            right: 0;
+            background: linear-gradient(to left, rgba(0,0,0,0.7), transparent);
+        }
+
+        /* 中间指示器 */
+        .dice-viewport .indicator {
+            position: absolute;
+            left: 50%;
+            top: 5px;
+            bottom: 5px;
+            width: 100px;
+            transform: translateX(-50%);
+            border: 2px solid #ff6b6b;
+            border-radius: 12px;
+            pointer-events: none;
+            z-index: 5;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.4);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .dice-viewport.stopped .indicator {
+            opacity: 1;
+        }
+
+        .dice-track {
+            display: flex;
+            flex-direction: row;
+            height: 100%;
+            align-items: center;
+            will-change: transform;
+        }
+
+        .dice-item {
+            flex-shrink: 0;
+            width: 90px;
+            height: 90px;
+            margin: 0 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 600;
+            color: #ccc;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .dice-item.selected {
+            background: linear-gradient(145deg, #ff6b6b, #ff8e8e);
+            color: #fff;
+            box-shadow: 0 0 25px rgba(255, 107, 107, 0.6);
+        }
+
+        /* 前戏模式容器 */
+        .foreplay-container {
+            flex: 1;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            padding: 20px 0;
+        }
+
+        .foreplay-container.show {
+            display: flex;
+        }
+
+        .foreplay-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .foreplay-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 15px 20px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+
+        .foreplay-item.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .foreplay-item.rolling {
+            animation: foreplayRoll 0.1s ease infinite;
+        }
+
+        @keyframes foreplayRoll {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .foreplay-num {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .foreplay-text {
+            flex: 1;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .result-display {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s ease;
+        }
+
+        .result-display.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-text {
+            font-size: 36px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ff6b6b, #ffa07a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .result-hint {
+            font-size: 14px;
+            color: #888;
+            margin-top: 8px;
+        }
+
+        .btn-roll {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            border: none;
+            border-radius: 50px;
+            padding: 18px 50px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            max-width: 280px;
+            margin: 20px auto 0;
+        }
+
+        .btn-roll:active {
+            transform: scale(0.95);
+        }
+
+        .btn-roll.rolling {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .btn-icon {
+            font-size: 20px;
+        }
+
+        .safe-area-bottom {
+            height: env(safe-area-inset-bottom, 20px);
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">‹</a>
+    <div class="container">
+        <header>
+            <h1>情趣骰子</h1>
+            <p>掷骰子，决定今晚的玩法</p>
+        </header>
+
+        <!-- 模式切换 -->
+        <div class="mode-switch">
+            <button class="mode-btn active" id="modeSingle" onclick="switchMode('single')">单次掷骰</button>
+            <button class="mode-btn" id="modeForeplay" onclick="switchMode('foreplay')">随机前戏</button>
+        </div>
+
+        <!-- 单次掷骰模式 -->
+        <div class="dice-container" id="diceContainer">
+            <!-- 动作骰子 -->
+            <div class="dice-section">
+                <div class="dice-label">🎲 动作</div>
+                <div class="dice-viewport" id="actionViewport">
+                    <div class="indicator"></div>
+                    <div class="dice-track" id="actionTrack"></div>
+                </div>
+            </div>
+
+            <!-- 部位骰子 -->
+            <div class="dice-section">
+                <div class="dice-label">🎯 部位</div>
+                <div class="dice-viewport" id="partViewport">
+                    <div class="indicator"></div>
+                    <div class="dice-track" id="partTrack"></div>
+                </div>
+            </div>
+
+            <!-- 结果显示 -->
+            <div class="result-display" id="resultDisplay">
+                <div class="result-text" id="resultText"></div>
+                <div class="result-hint">尽情享受吧~</div>
+            </div>
+        </div>
+
+        <!-- 随机前戏模式 -->
+        <div class="foreplay-container" id="foreplayContainer">
+            <div class="foreplay-list" id="foreplayList">
+                <div class="foreplay-item" data-index="0">
+                    <div class="foreplay-num">1</div>
+                    <div class="foreplay-text">等待抽取...</div>
+                </div>
+                <div class="foreplay-item" data-index="1">
+                    <div class="foreplay-num">2</div>
+                    <div class="foreplay-text">等待抽取...</div>
+                </div>
+                <div class="foreplay-item" data-index="2">
+                    <div class="foreplay-num">3</div>
+                    <div class="foreplay-text">等待抽取...</div>
+                </div>
+                <div class="foreplay-item" data-index="3">
+                    <div class="foreplay-num">4</div>
+                    <div class="foreplay-text">等待抽取...</div>
+                </div>
+                <div class="foreplay-item" data-index="4">
+                    <div class="foreplay-num">5</div>
+                    <div class="foreplay-text">等待抽取...</div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-roll" id="btnRoll" onclick="startRoll()">
+            <span class="btn-icon">🎲</span>
+            <span id="btnText">掷骰子</span>
+        </button>
+
+        <div class="safe-area-bottom"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const presetCode = urlParams.get('code');
+
+        let actions = [];
+        let parts = [];
+        let preset = null;
+        let currentRound = 0;
+        let isRolling = false;
+        let currentMode = 'single';
+        const ITEM_WIDTH = 100;
+
+        // 设置返回按钮行为
+        function setupBackButton() {
+            const backBtn = document.querySelector('.back-btn');
+            if (!backBtn) return;
+
+            backBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // 优先返回上一页
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else if (presetCode) {
+                    // 无历史时，返回带 code 的首页
+                    window.location.href = `index.html?code=${presetCode}`;
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+        }
+
+        // 加载数据
+        async function loadData() {
+            // 先加载基础数据
+            try {
+                const response = await fetch(`${API_BASE}/dice`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const result = await response.json();
+                if (result.success) {
+                    actions = result.data.actions;
+                    parts = result.data.parts;
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                actions = ["按摩", "亲吻", "轻咬", "舔舐", "抚摸", "吹气", "挠痒", "冰敷"];
+                parts = ["耳朵", "脖颈", "肩膀", "胸口", "后背", "腰部", "臀部", "大腿"];
+            }
+
+            // 如果有预设码，静默加载预设（不改变界面）
+            if (presetCode) {
+                try {
+                    const response = await fetch(`${API_BASE}/preset/${presetCode}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data.success) {
+                        preset = data.data;
+                        // 从 localStorage 恢复当前轮次
+                        const savedRound = localStorage.getItem(`preset_round_${presetCode}_dice`);
+                        currentRound = savedRound ? parseInt(savedRound) : 0;
+                        // 预设模式默认使用单次投掷模式
+                        currentMode = 'single';
+                        document.getElementById('modeSingle').classList.add('active');
+                        document.getElementById('modeForeplay').classList.remove('active');
+                        document.getElementById('diceContainer').classList.remove('hidden');
+                        document.getElementById('foreplayContainer').classList.remove('show');
+                        document.getElementById('btnText').textContent = '掷骰子';
+                    }
+                } catch (e) {
+                    console.error('加载预设失败:', e);
+                }
+            }
+            // 删除旧的按类型分开的预设数据，使用统一的 rounds_data
+
+            requestAnimationFrame(() => {
+                initDice();
+            });
+        }
+
+        // 初始化骰子
+        function initDice() {
+            createDiceTrack('actionTrack', actions);
+            createDiceTrack('partTrack', parts);
+        }
+
+        // 创建骰子轨道
+        function createDiceTrack(trackId, items) {
+            const track = document.getElementById(trackId);
+            const viewport = track.parentElement;
+            const viewportWidth = viewport.offsetWidth || window.innerWidth - 40;
+            const repeatCount = 30;
+            let html = '';
+
+            for (let i = 0; i < repeatCount; i++) {
+                items.forEach((item, idx) => {
+                    html += `<div class="dice-item">${item}</div>`;
+                });
+            }
+
+            track.innerHTML = html;
+
+            const middleGroup = Math.floor(repeatCount / 2);
+            const targetItemIndex = middleGroup * items.length;
+            const offset = viewportWidth / 2 - (targetItemIndex * ITEM_WIDTH + ITEM_WIDTH / 2);
+            track.dataset.baseOffset = offset;
+            track.style.transform = `translateX(${offset}px)`;
+        }
+
+        // 获取当前的 translateX 值
+        function getTranslateX(element) {
+            const style = window.getComputedStyle(element);
+            const matrix = style.transform;
+            if (matrix === 'none') return 0;
+            const values = matrix.match(/matrix.*\((.+)\)/)[1].split(', ');
+            return parseFloat(values[4]) || 0;
+        }
+
+        // 切换模式
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('modeSingle').classList.toggle('active', mode === 'single');
+            document.getElementById('modeForeplay').classList.toggle('active', mode === 'foreplay');
+            document.getElementById('diceContainer').classList.toggle('hidden', mode === 'foreplay');
+            document.getElementById('foreplayContainer').classList.toggle('show', mode === 'foreplay');
+
+            const btnText = document.getElementById('btnText');
+            btnText.textContent = mode === 'single' ? '掷骰子' : '开始抽取';
+
+            // 重置状态
+            resetState();
+        }
+
+        // 重置状态
+        function resetState() {
+            document.getElementById('resultDisplay').classList.remove('show');
+            document.getElementById('actionViewport').classList.remove('stopped');
+            document.getElementById('partViewport').classList.remove('stopped');
+            document.querySelectorAll('.dice-item.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            // 重置前戏列表
+            document.querySelectorAll('.foreplay-item').forEach(item => {
+                item.classList.remove('show', 'rolling');
+                item.querySelector('.foreplay-text').textContent = '等待抽取...';
+            });
+        }
+
+        // 开始抽取
+        function startRoll() {
+            if (isRolling) return;
+
+            if (currentMode === 'single') {
+                rollDice();
+            } else {
+                rollForeplay();
+            }
+        }
+
+        // 掷骰子（单次模式）
+        function rollDice() {
+            if (isRolling) return;
+
+            isRolling = true;
+            const btn = document.getElementById('btnRoll');
+            const btnText = document.getElementById('btnText');
+            btn.classList.add('rolling');
+            btnText.textContent = '滚动中...';
+
+            resetState();
+
+            const actionTrack = document.getElementById('actionTrack');
+            const partTrack = document.getElementById('partTrack');
+            const actionViewport = document.getElementById('actionViewport');
+            const partViewport = document.getElementById('partViewport');
+
+            // 预设模式使用预设数据，否则随机
+            let actionIndex, partIndex;
+            if (preset && preset.rounds_data && currentRound < preset.rounds_data.length) {
+                // 使用预设数据
+                const round = preset.rounds_data[currentRound];
+                actionIndex = actions.indexOf(round.dice_action_name);
+                partIndex = parts.indexOf(round.dice_part_name);
+                // 如果找不到，随机选
+                if (actionIndex < 0) actionIndex = Math.floor(Math.random() * actions.length);
+                if (partIndex < 0) partIndex = Math.floor(Math.random() * parts.length);
+            } else {
+                // 超轮随机
+                actionIndex = Math.floor(Math.random() * actions.length);
+                partIndex = Math.floor(Math.random() * parts.length);
+            }
+
+            const duration = 2000 + Math.random() * 1000;
+            const viewportWidth = actionViewport.offsetWidth || window.innerWidth - 40;
+
+            const actionSpins = Math.floor(Math.random() * 4) + 3;
+            const partSpins = Math.floor(Math.random() * 4) + 3;
+
+            // 计算目标元素索引，使其居中
+            const actionTargetIdx = actionSpins * actions.length + actionIndex;
+            const partTargetIdx = partSpins * parts.length + partIndex;
+
+            // 直接计算让目标元素居中的 translateX
+            const actionTargetX = viewportWidth / 2 - (actionTargetIdx * ITEM_WIDTH + ITEM_WIDTH / 2);
+            const partTargetX = viewportWidth / 2 - (partTargetIdx * ITEM_WIDTH + ITEM_WIDTH / 2);
+
+            const actionStartX = getTranslateX(actionTrack);
+            const partStartX = getTranslateX(partTrack);
+
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const elapsed = currentTime - startTime;
+                let progress = Math.min(elapsed / duration, 1);
+                const easeOut = 1 - Math.pow(1 - progress, 4);
+
+                const actionX = actionStartX + (actionTargetX - actionStartX) * easeOut;
+                const partX = partStartX + (partTargetX - partStartX) * easeOut;
+
+                actionTrack.style.transform = `translateX(${actionX}px)`;
+                partTrack.style.transform = `translateX(${partX}px)`;
+
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    actionTrack.style.transform = `translateX(${actionTargetX}px)`;
+                    partTrack.style.transform = `translateX(${partTargetX}px)`;
+                    finishRoll(actionIndex, partIndex, actionTargetX, partTargetX, viewportWidth);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // 完成掷骰
+        function finishRoll(actionIndex, partIndex, actionX, partX, viewportWidth) {
+            const actionViewport = document.getElementById('actionViewport');
+            const partViewport = document.getElementById('partViewport');
+
+            actionViewport.classList.add('stopped');
+            partViewport.classList.add('stopped');
+
+            const actionTrack = document.getElementById('actionTrack');
+            const partTrack = document.getElementById('partTrack');
+
+            const centerOffset = viewportWidth / 2;
+            const actionCenterIdx = Math.round((centerOffset - ITEM_WIDTH / 2 - actionX) / ITEM_WIDTH);
+            const partCenterIdx = Math.round((centerOffset - ITEM_WIDTH / 2 - partX) / ITEM_WIDTH);
+
+            const actionItems = actionTrack.querySelectorAll('.dice-item');
+            const partItems = partTrack.querySelectorAll('.dice-item');
+
+            if (actionItems[actionCenterIdx]) {
+                actionItems[actionCenterIdx].classList.add('selected');
+            }
+            if (partItems[partCenterIdx]) {
+                partItems[partCenterIdx].classList.add('selected');
+            }
+
+            // 使用取模运算从 DOM 索引获取实际数据索引
+            const realActionIdx = actionCenterIdx % actions.length;
+            const realPartIdx = partCenterIdx % parts.length;
+
+            const resultDisplay = document.getElementById('resultDisplay');
+            const resultText = document.getElementById('resultText');
+            resultText.textContent = `${actions[realActionIdx]}${parts[realPartIdx]}`;
+            resultDisplay.classList.add('show');
+
+            const btn = document.getElementById('btnRoll');
+            const btnText = document.getElementById('btnText');
+            btn.classList.remove('rolling');
+            btnText.textContent = '再掷一次';
+
+            if (navigator.vibrate) {
+                navigator.vibrate([50, 50, 100]);
+            }
+
+            // 预设模式下，保存轮次状态（单次模式一次一轮）
+            if (presetCode && preset && preset.rounds_data && currentRound < preset.rounds_data.length) {
+                currentRound++;
+                localStorage.setItem(`preset_round_${presetCode}_dice`, currentRound.toString());
+            }
+
+            isRolling = false;
+        }
+
+        // 随机前戏模式
+        function rollForeplay() {
+            if (isRolling) return;
+
+            isRolling = true;
+            const btn = document.getElementById('btnRoll');
+            const btnText = document.getElementById('btnText');
+            btn.classList.add('rolling');
+            btnText.textContent = '抽取中...';
+
+            // 重置
+            document.querySelectorAll('.foreplay-item').forEach(item => {
+                item.classList.remove('show', 'rolling');
+                item.querySelector('.foreplay-text').textContent = '等待抽取...';
+            });
+
+            // 生成5个结果
+            const results = [];
+            for (let i = 0; i < 5; i++) {
+                const roundIndex = currentRound + i;
+                if (preset && preset.rounds_data && preset.rounds_data[roundIndex]) {
+                    // 静默使用预设结果
+                    results.push({
+                        action: preset.rounds_data[roundIndex].dice_action_name || actions[Math.floor(Math.random() * actions.length)],
+                        part: preset.rounds_data[roundIndex].dice_part_name || parts[Math.floor(Math.random() * parts.length)]
+                    });
+                } else {
+                    // 随机结果（超轮随机）
+                    const actionIdx = Math.floor(Math.random() * actions.length);
+                    const partIdx = Math.floor(Math.random() * parts.length);
+                    results.push({
+                        action: actions[actionIdx],
+                        part: parts[partIdx]
+                    });
+                }
+            }
+
+            // 预设模式下，抽取完成后保存轮次（前戏模式一次抽取5个）
+            if (presetCode && preset) {
+                currentRound += 5;
+                localStorage.setItem(`preset_round_${presetCode}_dice`, currentRound.toString());
+            }
+
+            // 依次显示每个结果（带滚动动画）
+            let currentIndex = 0;
+
+            function showNextResult() {
+                if (currentIndex >= 5) {
+                    // 全部完成
+                    btn.classList.remove('rolling');
+                    btnText.textContent = '再抽一次';
+                    isRolling = false;
+
+                    if (navigator.vibrate) {
+                        navigator.vibrate([100, 50, 100, 50, 200]);
+                    }
+                    return;
+                }
+
+                const item = document.querySelector(`.foreplay-item[data-index="${currentIndex}"]`);
+                const textEl = item.querySelector('.foreplay-text');
+                item.classList.add('show', 'rolling');
+
+                // 滚动动画
+                let rollCount = 0;
+                const maxRolls = 8 + currentIndex * 2; // 越后面滚动越久
+                const rollInterval = setInterval(() => {
+                    const randomAction = actions[Math.floor(Math.random() * actions.length)];
+                    const randomPart = parts[Math.floor(Math.random() * parts.length)];
+                    textEl.textContent = `${randomAction}${randomPart}`;
+                    rollCount++;
+
+                    if (rollCount >= maxRolls) {
+                        clearInterval(rollInterval);
+                        // 显示最终结果
+                        textEl.textContent = `${results[currentIndex].action}${results[currentIndex].part}`;
+                        item.classList.remove('rolling');
+
+                        if (navigator.vibrate) {
+                            navigator.vibrate(50);
+                        }
+
+                        currentIndex++;
+                        setTimeout(showNextResult, 300);
+                    }
+                }, 80);
+            }
+
+            showNextResult();
+        }
+
+        // 页面加载
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            setupBackButton();
+        });
+    </script>
+</body>
+</html>

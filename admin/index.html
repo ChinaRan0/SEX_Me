@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f5f5f5; min-height: 100vh; }
+        .header { background: #1a1a2e; color: #fff; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 20px; }
+        .header-right { display: flex; align-items: center; gap: 16px; }
+        .header-right span { font-size: 14px; opacity: 0.8; }
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; transition: all 0.3s; }
+        .btn-logout { background: rgba(255,255,255,0.1); color: #fff; }
+        .btn-logout:hover { background: rgba(255,255,255,0.2); }
+        .container { display: flex; min-height: calc(100vh - 60px); }
+        .sidebar { width: 200px; background: #fff; border-right: 1px solid #e0e0e0; padding: 16px 0; }
+        .sidebar-item { padding: 12px 20px; cursor: pointer; color: #333; transition: all 0.2s; border-left: 3px solid transparent; font-size: 14px; }
+        .sidebar-item:hover { background: #f5f5f5; }
+        .sidebar-item.active { background: #f0f0f0; border-left-color: #1a1a2e; font-weight: 500; }
+        .sidebar-section { padding: 12px 20px 6px; font-size: 12px; color: #999; font-weight: 500; text-transform: uppercase; }
+        .main-content { flex: 1; padding: 24px; overflow-y: auto; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .page-title { font-size: 24px; color: #1a1a2e; }
+        .btn-primary { background: #1a1a2e; color: #fff; }
+        .btn-primary:hover { background: #2d2d44; }
+        .btn-secondary { background: #e0e0e0; color: #333; }
+        .btn-danger { background: #dc3545; color: #fff; }
+        .btn-success { background: #28a745; color: #fff; }
+        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .card { background: #fff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .card-header { padding: 16px 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .card-header h3 { font-size: 16px; }
+        .table-container { overflow-x: auto; max-height: calc(100vh - 240px); }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e0e0e0; font-size: 14px; }
+        th { background: #f5f5f5; font-weight: 600; color: #333; position: sticky; top: 0; }
+        tr:hover { background: #fafafa; }
+        .status-active { color: #28a745; }
+        .status-inactive { color: #dc3545; }
+        .actions { display: flex; gap: 8px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: #fff; border-radius: 12px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; }
+        .modal-content.wide { max-width: 900px; }
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h3 { font-size: 18px; }
+        .modal-close { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
+        .modal-body { padding: 24px; }
+        .modal-footer { padding: 16px 24px; border-top: 1px solid #e0e0e0; display: flex; justify-content: flex-end; gap: 12px; }
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; margin-bottom: 8px; font-weight: 500; color: #333; font-size: 14px; }
+        .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus { outline: none; border-color: #1a1a2e; }
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-row { display: flex; gap: 16px; }
+        .form-row .form-group { flex: 1; }
+        .checkbox-group { display: flex; align-items: center; gap: 8px; }
+        .checkbox-group input { width: auto; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 16px 24px; border-radius: 8px; color: #fff; font-size: 14px; z-index: 2000; animation: slideIn 0.3s ease; }
+        .toast.success { background: #28a745; }
+        .toast.error { background: #dc3545; }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .loading { text-align: center; padding: 40px; color: #666; }
+
+        /* Preset cards */
+        .preset-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-bottom: 12px; background: #fafafa; }
+        .preset-card-header { display: flex; justify-content: space-between; align-items: center; }
+        .preset-code { font-family: monospace; background: #1a1a2e; color: #fff; padding: 4px 12px; border-radius: 4px; font-size: 13px; }
+        .share-urls { margin-top: 10px; }
+        .share-url-item { background: #f0f0f0; padding: 8px 12px; border-radius: 6px; font-size: 13px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .share-url-item a { color: #1a1a2e; text-decoration: none; }
+        .share-url-item a:hover { text-decoration: underline; }
+
+        /* Round editor - 分列布局 */
+        .round-columns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .round-column { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; }
+        .round-column.dice { border-top: 3px solid #1565c0; }
+        .round-column.pose { border-top: 3px solid #c2185b; }
+        .round-column.task { border-top: 3px solid #2e7d32; }
+        .column-title { font-weight: 600; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+        .column-title.dice { color: #1565c0; }
+        .column-title.pose { color: #c2185b; }
+        .column-title.task { color: #2e7d32; }
+        .round-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .round-row:last-child { margin-bottom: 0; }
+        .round-label { min-width: 45px; font-size: 13px; color: #666; }
+        .round-row select { flex: 1; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; min-width: 0; }
+        .round-row.multi-select { flex-wrap: wrap; }
+        .round-row.multi-select select { flex: 1 1 60px; min-width: 60px; max-width: 100px; }
+
+        .empty-state { text-align: center; padding: 40px; color: #666; }
+        .game-type-badge { display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 12px; margin-left: 8px; }
+        .game-type-badge.dice { background: #e3f2fd; color: #1565c0; }
+        .game-type-badge.pose { background: #fce4ec; color: #c2185b; }
+        .game-type-badge.task { background: #e8f5e9; color: #2e7d32; }
+        .game-type-badge.all { background: linear-gradient(135deg, #e3f2fd, #fce4ec, #e8f5e9); color: #1a1a2e; }
+
+        /* 可搜索下拉框样式 */
+        .searchable-select { position: relative; flex: 1; }
+        .searchable-select input { width: 100%; cursor: pointer; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        .searchable-select input:focus { outline: none; border-color: #1a1a2e; }
+        .searchable-select-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .searchable-select-dropdown.show { display: block; }
+        .searchable-select-option {
+            padding: 8px 10px;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 1px solid #eee;
+        }
+        .searchable-select-option:hover { background: #f5f5f5; }
+        .searchable-select-option.selected { background: #e3f2fd; }
+        .searchable-select-option.empty { color: #999; cursor: default; }
+        .searchable-select-option.empty:hover { background: transparent; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>游戏数据管理后台</h1>
+        <div class="header-right">
+            <span id="currentUser">管理员</span>
+            <button class="btn btn-logout" onclick="logout()">退出登录</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-section">预设管理</div>
+            <div class="sidebar-item active" data-tab="presets">统一预设</div>
+            <div class="sidebar-section">数据管理</div>
+            <div class="sidebar-item" data-tab="dice-data">骰子数据</div>
+            <div class="sidebar-item" data-tab="pose-data">姿势数据</div>
+            <div class="sidebar-item" data-tab="task-data">任务库</div>
+        </div>
+
+        <div class="main-content">
+            <!-- 统一预设 -->
+            <div id="presets-tab" class="tab-content active">
+                <div class="page-header">
+                    <h2 class="page-title">统一预设 <span class="game-type-badge all">骰子+姿势+任务</span></h2>
+                    <button class="btn btn-primary" onclick="openPresetModal()">创建预设</button>
+                </div>
+                <p style="color: #666; margin-bottom: 20px; font-size: 14px;">一个预设包含骰子、姿势、任务三种游戏的所有轮次数据，三个游戏页面共用同一个分享链接。</p>
+                <div id="presetsList"></div>
+            </div>
+
+            <!-- 骰子数据 -->
+            <div id="dice-data-tab" class="tab-content">
+                <div class="page-header"><h2 class="page-title">骰子数据管理</h2></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                    <div class="card">
+                        <div class="card-header"><h3>动作列表</h3><button class="btn btn-primary btn-sm" onclick="openModal('action')">添加</button></div>
+                        <div class="table-container" id="actionsTable"><div class="loading">加载中...</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>部位列表</h3><button class="btn btn-primary btn-sm" onclick="openModal('part')">添加</button></div>
+                        <div class="table-container" id="partsTable"><div class="loading">加载中...</div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 姿势数据 -->
+            <div id="pose-data-tab" class="tab-content">
+                <div class="page-header"><h2 class="page-title">姿势数据管理</h2></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+                    <div class="card">
+                        <div class="card-header"><h3>地点列表</h3><button class="btn btn-primary btn-sm" onclick="openModal('place')">添加</button></div>
+                        <div class="table-container" id="placesTable"><div class="loading">加载中...</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>时间选项</h3><button class="btn btn-primary btn-sm" onclick="openModal('time')">添加</button></div>
+                        <div class="table-container" id="timesTable"><div class="loading">加载中...</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>姿势数量</h3><span id="poseCount">0</span></div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h3>姿势列表</h3><button class="btn btn-primary btn-sm" onclick="openModal('pose')">添加姿势</button></div>
+                    <div class="table-container" id="posesTable"><div class="loading">加载中...</div></div>
+                </div>
+            </div>
+
+            <!-- 任务库 -->
+            <div id="task-data-tab" class="tab-content">
+                <div class="page-header">
+                    <h2 class="page-title">随机任务库</h2>
+                    <button class="btn btn-primary" onclick="openModal('task')">添加任务</button>
+                </div>
+                <div class="card">
+                    <div class="table-container" id="tasksTable"><div class="loading">加载中...</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simple Modal -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h3 id="modalTitle">添加</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+            <div class="modal-body" id="modalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveItem()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rounds Setup Modal -->
+    <div class="modal" id="roundsSetupModal">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header"><h3>创建预设 - 设置轮数</h3><button class="modal-close" onclick="closeRoundsSetupModal()">&times;</button></div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>游戏轮数</label>
+                    <input type="number" id="setupRounds" value="5" min="1" max="20" style="text-align: center; font-size: 24px;">
+                    <p style="color: #666; font-size: 12px; margin-top: 8px;">每轮包含骰子、姿势、任务三种游戏的数据</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeRoundsSetupModal()">取消</button>
+                <button class="btn btn-primary" onclick="confirmRoundsSetup()">确定，开始编辑</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Preset Modal -->
+    <div class="modal" id="presetModal">
+        <div class="modal-content wide" style="max-width: 1100px;">
+            <div class="modal-header"><h3 id="presetModalTitle">编辑预设</h3><button class="modal-close" onclick="closePresetModal()">&times;</button></div>
+            <div class="modal-body" id="presetModalBody"></div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closePresetModal()">取消</button>
+                <button class="btn btn-success" onclick="generateRandomRounds()">自动填充</button>
+                <button class="btn btn-primary" onclick="savePreset()">保存预设</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '../api';
+        let token = localStorage.getItem('admin_token');
+        let currentType = '';
+        let currentEditId = null;
+        let formData = {};
+
+        if (!token) window.location.href = 'login.html';
+        const user = JSON.parse(localStorage.getItem('admin_user') || '{}');
+        document.getElementById('currentUser').textContent = user.username || '管理员';
+
+        async function api(endpoint, options = {}) {
+            const headers = { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) };
+            const response = await fetch(`${API_BASE}${endpoint}`, { ...options, headers });
+            const data = await response.json();
+            if (response.status === 401) { localStorage.clear(); window.location.href = 'login.html'; }
+            return data;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`; toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Tab switching
+        document.querySelectorAll('.sidebar-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+                item.classList.add('active');
+                const tab = item.dataset.tab;
+                document.getElementById(`${tab}-tab`).classList.add('active');
+                await loadData(tab);
+            });
+        });
+
+        async function loadData(tab) {
+            switch(tab) {
+                case 'presets': await loadPresets(); break;
+                case 'dice-data': await loadActions(); await loadParts(); break;
+                case 'pose-data': await loadPlaces(); await loadTimes(); await loadPoses(); break;
+                case 'task-data': await loadTasks(); break;
+            }
+        }
+
+        // === Presets ===
+        async function loadPresets() {
+            const data = await api('/admin/presets');
+            const container = document.getElementById('presetsList');
+
+            // 调试：输出 API 返回数据
+            console.log('loadPresets API response:', data);
+
+            if (!data.success) {
+                container.innerHTML = `<div class="empty-state">加载失败: ${data.message || '未知错误'}</div>`;
+                return;
+            }
+
+            if (!data.data || !Array.isArray(data.data) || data.data.length === 0) {
+                container.innerHTML = `<div class="empty-state">暂无预设，点击右上角"创建预设"按钮添加</div>`;
+                return;
+            }
+
+            let html = '';
+            for (const preset of data.data) {
+                const detail = await api(`/admin/presets/${preset.id}`);
+                const roundsCount = detail.success ? (detail.data.rounds_data?.length || 0) : 0;
+                const baseUrl = `${window.location.origin}${window.location.pathname.replace('admin/index.html', '')}`;
+
+                html += `
+                    <div class="preset-card">
+                        <div class="preset-card-header">
+                            <div>
+                                <strong>${preset.name}</strong>
+                                <span class="preset-code">${preset.share_code}</span>
+                                <span style="margin-left: 8px; color: #666; font-size: 13px;">${roundsCount} 轮</span>
+                            </div>
+                            <div class="actions">
+                                <button class="btn btn-secondary btn-sm" onclick="editPreset(${preset.id})">编辑</button>
+                                <button class="btn btn-danger btn-sm" onclick="deletePreset(${preset.id})">删除</button>
+                            </div>
+                        </div>
+                        <div class="share-urls">
+                            <div class="share-url-item">
+                                <span>🎲 骰子：</span>
+                                <a href="${baseUrl}touzi.html?code=${preset.share_code}" target="_blank">${baseUrl}touzi.html?code=${preset.share_code}</a>
+                                <button class="btn btn-sm btn-secondary" onclick="copyUrl('${baseUrl}touzi.html?code=${preset.share_code}')">复制</button>
+                            </div>
+                            <div class="share-url-item">
+                                <span>💑 姿势：</span>
+                                <a href="${baseUrl}zishi.html?code=${preset.share_code}" target="_blank">${baseUrl}zishi.html?code=${preset.share_code}</a>
+                                <button class="btn btn-sm btn-secondary" onclick="copyUrl('${baseUrl}zishi.html?code=${preset.share_code}')">复制</button>
+                            </div>
+                            <div class="share-url-item">
+                                <span>📝 任务：</span>
+                                <a href="${baseUrl}suiji.html?code=${preset.share_code}" target="_blank">${baseUrl}suiji.html?code=${preset.share_code}</a>
+                                <button class="btn btn-sm btn-secondary" onclick="copyUrl('${baseUrl}suiji.html?code=${preset.share_code}')">复制</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        function copyUrl(url) {
+            navigator.clipboard.writeText(url).then(() => showToast('链接已复制'));
+        }
+
+        // 轮数设置弹窗
+        function openRoundsSetupModal() {
+            document.getElementById('setupRounds').value = 5;
+            document.getElementById('roundsSetupModal').classList.add('active');
+        }
+
+        function closeRoundsSetupModal() {
+            document.getElementById('roundsSetupModal').classList.remove('active');
+        }
+
+        async function confirmRoundsSetup() {
+            const rounds = parseInt(document.getElementById('setupRounds').value) || 5;
+            closeRoundsSetupModal();
+            await openPresetModal(null, rounds);
+        }
+
+        async function openPresetModal(id = null, initialRounds = null) {
+            currentEditId = id;
+
+            // 如果是新建且没有指定轮数，先弹出轮数设置
+            if (!id && initialRounds === null) {
+                openRoundsSetupModal();
+                return;
+            }
+
+            const data = await api('/admin/presets/form-data');
+            if (!data.success) { showToast('加载数据失败', 'error'); return; }
+            formData = data.data;
+
+            document.getElementById('presetModalTitle').textContent = (id ? '编辑' : '创建') + '预设';
+
+            // 基本信息区域
+            let formHtml = `
+                <div class="form-row">
+                    <div class="form-group"><label>预设名称</label><input type="text" id="presetName" placeholder="例如：今晚的游戏"></div>
+                    <div class="form-group" style="max-width: 150px;"><label>轮数</label><input type="number" id="presetRounds" value="${initialRounds || 5}" min="1" max="20" onchange="renderRoundEditors()"></div>
+                    <div class="form-group" style="max-width: 150px;"><label>分享码</label><input type="text" id="presetCode" placeholder="自动生成"></div>
+                </div>
+                <div id="roundEditors"></div>
+            `;
+            document.getElementById('presetModalBody').innerHTML = formHtml;
+
+            if (id) {
+                const preset = await api(`/admin/presets/${id}`);
+                if (preset.success) {
+                    document.getElementById('presetName').value = preset.data.name;
+                    document.getElementById('presetCode').value = preset.data.share_code;
+                    document.getElementById('presetRounds').value = preset.data.rounds || preset.data.rounds_data?.length || 5;
+                    renderRoundEditors(preset.data.rounds_data);
+                }
+            } else {
+                renderRoundEditors();
+            }
+
+            document.getElementById('presetModal').classList.add('active');
+        }
+
+        function closePresetModal() {
+            document.getElementById('presetModal').classList.remove('active');
+            currentEditId = null;
+        }
+
+        function renderRoundEditors(roundsData = null) {
+            const count = parseInt(document.getElementById('presetRounds').value) || 5;
+            const container = document.getElementById('roundEditors');
+
+            // 分列布局：骰子 | 姿势 | 任务
+            let html = `
+                <div style="margin: 16px 0 12px; font-size: 14px; color: #666;">设置每轮游戏的预设结果（超过轮数后自动随机）</div>
+                <div class="round-columns">
+                    <!-- 骰子列 -->
+                    <div class="round-column dice">
+                        <div class="column-title dice">🎲 骰子</div>
+            `;
+
+            // 骰子列
+            for (let i = 1; i <= count; i++) {
+                const rd = roundsData?.[i - 1] || {};
+                html += `
+                    <div class="round-row multi-select">
+                        <span class="round-label">第${i}轮</span>
+                        <select id="action_${i}">
+                            <option value="">动作</option>
+                            ${formData.actions?.map(a => `<option value="${a.id}" ${rd.dice_action_id == a.id ? 'selected' : ''}>${a.name}</option>`).join('')}
+                        </select>
+                        <select id="part_${i}">
+                            <option value="">部位</option>
+                            ${formData.parts?.map(p => `<option value="${p.id}" ${rd.dice_part_id == p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+
+            html += `
+                    </div>
+                    <!-- 姿势列 -->
+                    <div class="round-column pose">
+                        <div class="column-title pose">💑 姿势</div>
+            `;
+
+            // 姿势列
+            for (let i = 1; i <= count; i++) {
+                const rd = roundsData?.[i - 1] || {};
+                html += `
+                    <div class="round-row multi-select">
+                        <span class="round-label">第${i}轮</span>
+                        <select id="pose_${i}">
+                            <option value="">姿势</option>
+                            ${formData.poses?.map(p => `<option value="${p.id}" ${rd.pose_id == p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                        </select>
+                        <select id="place_${i}">
+                            <option value="">地点</option>
+                            ${formData.places?.map(p => `<option value="${p.id}" ${rd.place_id == p.id ? 'selected' : ''}>${p.name}</option>`).join('')}
+                        </select>
+                        <select id="time_${i}">
+                            <option value="">时间</option>
+                            ${formData.times?.map(t => `<option value="${t.id}" ${rd.time_id == t.id ? 'selected' : ''}>${t.name}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+
+            html += `
+                    </div>
+                    <!-- 任务列 -->
+                    <div class="round-column task">
+                        <div class="column-title task">📝 任务</div>
+            `;
+
+            // 任务列 - 使用可搜索下拉框
+            for (let i = 1; i <= count; i++) {
+                const rd = roundsData?.[i - 1] || {};
+                const selectedTask = formData.tasks?.find(t => t.id == rd.task_id);
+                const displayText = selectedTask ? selectedTask.description.substring(0, 30) : '';
+
+                html += `
+                    <div class="round-row">
+                        <span class="round-label">第${i}轮</span>
+                        <div class="searchable-select" data-index="${i}" data-type="task">
+                            <input type="text"
+                                   id="task_${i}"
+                                   data-id="${rd.task_id || ''}"
+                                   value="${displayText.replace(/"/g, '&quot;')}"
+                                   placeholder="搜索任务..."
+                                   onclick="toggleTaskDropdown(${i})"
+                                   oninput="filterTasks(${i}, this.value)"
+                                   onfocus="toggleTaskDropdown(${i})">
+                            <div class="searchable-select-dropdown" id="task_dropdown_${i}">
+                                <!-- 动态填充选项 -->
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            html += `
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+
+            // 初始化所有任务下拉选项
+            for (let i = 1; i <= count; i++) {
+                const rd = roundsData?.[i - 1] || {};
+                initTaskDropdown(i, rd.task_id || '');
+            }
+        }
+
+        // 初始化任务下拉选项
+        function initTaskDropdown(index, selectedId) {
+            const dropdown = document.getElementById(`task_dropdown_${index}`);
+            if (!dropdown) return;
+            renderTaskOptions(dropdown, formData.tasks || [], selectedId, index);
+        }
+
+        // 渲染任务选项
+        function renderTaskOptions(dropdown, tasks, selectedId, index) {
+            if (!dropdown) return;
+            if (tasks.length === 0) {
+                dropdown.innerHTML = '<div class="searchable-select-option empty">无匹配结果</div>';
+                return;
+            }
+            dropdown.innerHTML = tasks.map(t => {
+                const displayText = t.description.length > 50
+                    ? t.description.substring(0, 50) + '...'
+                    : t.description;
+                const shortText = t.description.substring(0, 30).replace(/'/g, "\\'").replace(/"/g, '\\"');
+                return `<div class="searchable-select-option ${t.id == selectedId ? 'selected' : ''}"
+                             onclick="selectTask(${index}, ${t.id}, '${shortText}')">
+                            ${displayText}
+                        </div>`;
+            }).join('');
+        }
+
+        // 切换下拉框显示
+        function toggleTaskDropdown(index) {
+            const dropdown = document.getElementById(`task_dropdown_${index}`);
+            if (!dropdown) return;
+            const allDropdowns = document.querySelectorAll('.searchable-select-dropdown');
+
+            // 关闭其他下拉框
+            allDropdowns.forEach(d => {
+                if (d.id !== `task_dropdown_${index}`) d.classList.remove('show');
+            });
+
+            // 显示当前下拉框并重置选项
+            const isCurrentlyShown = dropdown.classList.contains('show');
+            if (!isCurrentlyShown) {
+                dropdown.classList.add('show');
+                const input = document.getElementById(`task_${index}`);
+                const selectedId = input?.dataset?.id || '';
+                renderTaskOptions(dropdown, formData.tasks || [], selectedId, index);
+            }
+        }
+
+        // 过滤任务
+        function filterTasks(index, keyword) {
+            const dropdown = document.getElementById(`task_dropdown_${index}`);
+            const input = document.getElementById(`task_${index}`);
+            if (!dropdown || !input) return;
+
+            const selectedId = input.dataset?.id || '';
+            const kw = keyword.toLowerCase();
+
+            const filtered = (formData.tasks || []).filter(t =>
+                t.description.toLowerCase().includes(kw)
+            );
+            renderTaskOptions(dropdown, filtered, selectedId, index);
+            dropdown.classList.add('show');
+        }
+
+        // 选择任务
+        function selectTask(index, taskId, taskName) {
+            const input = document.getElementById(`task_${index}`);
+            const dropdown = document.getElementById(`task_dropdown_${index}`);
+            if (!input || !dropdown) return;
+
+            input.value = taskName;
+            input.dataset.id = taskId;
+            dropdown.classList.remove('show');
+
+            // 重新渲染选项以更新选中状态
+            renderTaskOptions(dropdown, formData.tasks || [], taskId, index);
+        }
+
+        // 点击外部关闭下拉框
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.searchable-select')) {
+                document.querySelectorAll('.searchable-select-dropdown').forEach(d => d.classList.remove('show'));
+            }
+        });
+
+        async function generateRandomRounds() {
+            const roundsInput = document.getElementById('presetRounds');
+            const count = parseInt(roundsInput?.value) || 5;
+            const data = await api('/admin/presets/generate', {
+                method: 'POST',
+                body: JSON.stringify({ rounds: count })
+            });
+
+            if (data.success) {
+                renderRoundEditors(data.data.rounds);
+                showToast('已随机生成所有游戏数据');
+            } else {
+                showToast(data.message || '生成失败', 'error');
+            }
+        }
+
+        async function savePreset() {
+            const name = document.getElementById('presetName').value.trim();
+            const code = document.getElementById('presetCode').value.trim();
+            const roundsInput = document.getElementById('presetRounds');
+            const rounds = parseInt(roundsInput?.value) || 5;
+
+            if (!name) { showToast('请输入预设名称', 'error'); return; }
+
+            const roundsData = [];
+            for (let i = 1; i <= rounds; i++) {
+                const actionEl = document.getElementById(`action_${i}`);
+                const partEl = document.getElementById(`part_${i}`);
+                const poseEl = document.getElementById(`pose_${i}`);
+                const placeEl = document.getElementById(`place_${i}`);
+                const timeEl = document.getElementById(`time_${i}`);
+                const taskEl = document.getElementById(`task_${i}`);
+
+                const actionId = actionEl?.value;
+                const partId = partEl?.value;
+                const poseId = poseEl?.value;
+                const placeId = placeEl?.value;
+                const timeId = timeEl?.value;
+                const taskId = taskEl?.dataset?.id;  // 使用 dataset.id 获取任务 ID
+
+                roundsData.push({
+                    round_number: i,
+                    dice_action_id: actionId ? parseInt(actionId) : null,
+                    dice_part_id: partId ? parseInt(partId) : null,
+                    pose_id: poseId ? parseInt(poseId) : null,
+                    place_id: placeId ? parseInt(placeId) : null,
+                    time_id: timeId ? parseInt(timeId) : null,
+                    task_id: taskId ? parseInt(taskId) : null
+                });
+            }
+
+            const body = { name, rounds, rounds_data: roundsData };
+            if (code) body.share_code = code;
+
+            const endpoint = currentEditId ? `/admin/presets/${currentEditId}` : '/admin/presets';
+            const method = currentEditId ? 'PUT' : 'POST';
+
+            const data = await api(endpoint, { method, body: JSON.stringify(body) });
+
+            if (data.success) {
+                showToast(currentEditId ? '更新成功' : '创建成功');
+                closePresetModal();
+                loadPresets();
+            } else {
+                showToast(data.message || '操作失败', 'error');
+            }
+        }
+
+        async function editPreset(id) {
+            openPresetModal(id);
+        }
+
+        async function deletePreset(id) {
+            if (!confirm('确定要删除此预设吗？')) return;
+            const data = await api(`/admin/presets/${id}`, { method: 'DELETE' });
+            if (data.success) {
+                showToast('删除成功');
+                loadPresets();
+            } else {
+                showToast('删除失败', 'error');
+            }
+        }
+
+        // === CRUD Tables ===
+        function renderTable(containerId, items, type) {
+            const container = document.getElementById(containerId);
+            if (!items || items.length === 0) { container.innerHTML = '<div class="loading">暂无数据</div>'; return; }
+            container.innerHTML = `
+                <table><thead><tr><th>ID</th><th>名称</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody>${items.map(item => `
+                    <tr><td>${item.id}</td><td>${item.name || item.description?.substring(0, 50) || '-'}</td>
+                    <td><span class="${item.is_active ? 'status-active' : 'status-inactive'}">${item.is_active ? '启用' : '禁用'}</span></td>
+                    <td class="actions">
+                        <button class="btn btn-secondary btn-sm" onclick="editItem('${type}', ${item.id})">编辑</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteItem('${type}', ${item.id})">删除</button>
+                    </td></tr>
+                `).join('')}</tbody></table>
+            `;
+        }
+
+        async function loadActions() { const d = await api('/admin/dice/actions'); if (d.success) renderTable('actionsTable', d.data, 'action'); }
+        async function loadParts() { const d = await api('/admin/dice/parts'); if (d.success) renderTable('partsTable', d.data, 'part'); }
+        async function loadPlaces() { const d = await api('/admin/poses/places'); if (d.success) renderTable('placesTable', d.data, 'place'); }
+        async function loadTimes() { const d = await api('/admin/poses/times'); if (d.success) renderTable('timesTable', d.data, 'time'); }
+        async function loadPoses() {
+            const d = await api('/admin/poses');
+            if (d.success) {
+                document.getElementById('poseCount').textContent = d.data.length + ' 个';
+                const container = document.getElementById('posesTable');
+                container.innerHTML = `<table><thead><tr><th style="width:50px;">ID</th><th style="width:120px;">名称</th><th>描述</th><th style="width:60px;">状态</th><th style="width:140px;">操作</th></tr></thead><tbody>${d.data.map(p => `<tr><td>${p.id}</td><td>${p.name}</td><td><div style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.description || '-'}</div></td><td><span class="${p.is_active ? 'status-active' : 'status-inactive'}">${p.is_active ? '启用' : '禁用'}</span></td><td class="actions"><button class="btn btn-secondary btn-sm" onclick="editItem('pose', ${p.id})">编辑</button><button class="btn btn-danger btn-sm" onclick="deleteItem('pose', ${p.id})">删除</button></td></tr>`).join('')}</tbody></table>`;
+            }
+        }
+        async function loadTasks() {
+            const d = await api('/admin/tasks');
+            if (d.success) {
+                const container = document.getElementById('tasksTable');
+                container.innerHTML = `<table><thead><tr><th>ID</th><th>描述</th><th>状态</th><th>操作</th></tr></thead><tbody>${d.data.map(t => `<tr><td>${t.id}</td><td>${t.description}</td><td><span class="${t.is_active ? 'status-active' : 'status-inactive'}">${t.is_active ? '启用' : '禁用'}</span></td><td class="actions"><button class="btn btn-secondary btn-sm" onclick="editItem('task', ${t.id})">编辑</button><button class="btn btn-danger btn-sm" onclick="deleteItem('task', ${t.id})">删除</button></td></tr>`).join('')}</tbody></table>`;
+            }
+        }
+
+        function openModal(type, data = null) {
+            currentType = type;
+            currentEditId = data ? data.id : null;
+            const titles = { action: '动作', part: '部位', place: '地点', time: '时间', pose: '姿势', task: '任务' };
+            document.getElementById('modalTitle').textContent = (currentEditId ? '编辑' : '添加') + titles[type];
+
+            let formHtml = '';
+            if (type === 'pose') {
+                formHtml = `
+                    <div class="form-group"><label>名称</label><input type="text" id="itemName" value="${data?.name || ''}" required></div>
+                    <div class="form-group"><label>图片路径</label><input type="text" id="itemImage" value="${data?.image_path || ''}"></div>
+                    <div class="form-group"><label>描述</label><textarea id="itemDesc">${data?.description || ''}</textarea></div>
+                    <div class="form-group"><label>排序</label><input type="number" id="itemSort" value="${data?.sort_order || 0}"></div>
+                    <div class="form-group checkbox-group"><input type="checkbox" id="itemActive" ${data?.is_active !== 0 ? 'checked' : ''}><label>启用</label></div>
+                `;
+            } else if (type === 'task') {
+                formHtml = `
+                    <div class="form-group"><label>描述</label><textarea id="itemDesc" required>${data?.description || ''}</textarea></div>
+                    <div class="form-group checkbox-group"><input type="checkbox" id="itemActive" ${data?.is_active !== 0 ? 'checked' : ''}><label>启用</label></div>
+                `;
+            } else {
+                formHtml = `
+                    <div class="form-group"><label>名称</label><input type="text" id="itemName" value="${data?.name || ''}" required></div>
+                    <div class="form-group"><label>排序</label><input type="number" id="itemSort" value="${data?.sort_order || 0}"></div>
+                    <div class="form-group checkbox-group"><input type="checkbox" id="itemActive" ${data?.is_active !== 0 ? 'checked' : ''}><label>启用</label></div>
+                `;
+            }
+            document.getElementById('modalBody').innerHTML = formHtml;
+            document.getElementById('modal').classList.add('active');
+        }
+
+        function closeModal() { document.getElementById('modal').classList.remove('active'); currentType = ''; currentEditId = null; }
+
+        async function editItem(type, id) {
+            const endpoints = { action: '/admin/dice/actions', part: '/admin/dice/parts', place: '/admin/poses/places', time: '/admin/poses/times', pose: '/admin/poses', task: '/admin/tasks' };
+            const d = await api(`${endpoints[type]}/${id}`);
+            if (d.success) openModal(type, d.data);
+        }
+
+        async function saveItem() {
+            const endpoints = { action: '/admin/dice/actions', part: '/admin/dice/parts', place: '/admin/poses/places', time: '/admin/poses/times', pose: '/admin/poses', task: '/admin/tasks' };
+            let body = { is_active: document.getElementById('itemActive')?.checked ? 1 : 0 };
+
+            if (currentType === 'task') {
+                body.description = document.getElementById('itemDesc').value;
+            } else if (currentType === 'pose') {
+                body = { ...body, name: document.getElementById('itemName').value, image_path: document.getElementById('itemImage').value, description: document.getElementById('itemDesc').value, sort_order: parseInt(document.getElementById('itemSort').value) || 0 };
+            } else {
+                body = { ...body, name: document.getElementById('itemName').value, sort_order: parseInt(document.getElementById('itemSort').value) || 0 };
+            }
+
+            const endpoint = currentEditId ? `${endpoints[currentType]}/${currentEditId}` : endpoints[currentType];
+            const data = await api(endpoint, { method: currentEditId ? 'PUT' : 'POST', body: JSON.stringify(body) });
+
+            if (data.success) { showToast(currentEditId ? '更新成功' : '添加成功'); closeModal(); loadData(document.querySelector('.sidebar-item.active').dataset.tab); }
+            else showToast(data.message || '操作失败', 'error');
+        }
+
+        async function deleteItem(type, id) {
+            if (!confirm('确定删除？')) return;
+            const endpoints = { action: '/admin/dice/actions', part: '/admin/dice/parts', place: '/admin/poses/places', time: '/admin/poses/times', pose: '/admin/poses', task: '/admin/tasks' };
+            const data = await api(`${endpoints[type]}/${id}`, { method: 'DELETE' });
+            if (data.success) { showToast('删除成功'); loadData(document.querySelector('.sidebar-item.active').dataset.tab); }
+            else showToast('删除失败', 'error');
+        }
+
+        async function logout() {
+            await api('/auth/logout', { method: 'POST' });
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+
+        // Initial load
+        loadPresets();
+    </script>
+</body>
+</html>

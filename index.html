@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>情趣游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 年龄验证弹窗 */
+        .age-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1a 100%);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .age-modal.hidden {
+            display: none;
+        }
+
+        .age-modal-content {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 40px 30px;
+            text-align: center;
+            max-width: 360px;
+            width: 100%;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: modalIn 0.5s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .age-modal-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .age-modal-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .age-modal-desc {
+            color: #888;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .age-modal-desc strong {
+            color: #ff6b6b;
+        }
+
+        .age-modal-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .age-btn {
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .age-btn-yes {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            color: #fff;
+        }
+
+        .age-btn-yes:hover,
+        .age-btn-yes:active {
+            transform: scale(1.02);
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+        }
+
+        .age-btn-no {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .age-btn-no:hover,
+        .age-btn-no:active {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* 未成年提示 */
+        .underage-message {
+            display: none;
+        }
+
+        .underage-message.show {
+            display: block;
+        }
+
+        .underage-message .age-modal-content {
+            background: rgba(244, 67, 54, 0.1);
+            border-color: rgba(244, 67, 54, 0.3);
+        }
+
+        .underage-message .age-modal-icon {
+            color: #f44336;
+        }
+
+        .underage-message .age-modal-title {
+            background: linear-gradient(90deg, #f44336, #e57373);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* 头部 */
+        .header {
+            text-align: center;
+            padding: 40px 0 30px;
+        }
+
+        .header-icon {
+            font-size: 60px;
+            margin-bottom: 15px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e8e, #ffa07a);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 15px;
+        }
+
+        /* 游戏列表 */
+        .game-list {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding: 10px 0;
+        }
+
+        .game-card {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 20px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, transparent 50%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .game-card:hover::before,
+        .game-card:active::before {
+            opacity: 1;
+        }
+
+        .game-card:active {
+            transform: scale(0.98);
+        }
+
+        .game-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .game-card:nth-child(1) .game-icon {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+        }
+
+        .game-card:nth-child(2) .game-icon {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
+
+        .game-card:nth-child(3) .game-icon {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+
+        .game-info {
+            flex: 1;
+            position: relative;
+            z-index: 1;
+        }
+
+        .game-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #fff;
+        }
+
+        .game-desc {
+            font-size: 13px;
+            color: #888;
+            line-height: 1.4;
+        }
+
+        .game-arrow {
+            color: #666;
+            font-size: 20px;
+            position: relative;
+            z-index: 1;
+            transition: transform 0.3s ease, color 0.3s ease;
+        }
+
+        .game-card:hover .game-arrow,
+        .game-card:active .game-arrow {
+            transform: translateX(5px);
+            color: #ff6b6b;
+        }
+
+        /* 底部提示 */
+        .footer-hint {
+            text-align: center;
+            padding: 20px 0;
+            color: #555;
+            font-size: 12px;
+        }
+
+        .footer-hint span {
+            color: #ff6b6b;
+        }
+
+        /* 安全区域 */
+        .safe-area-bottom {
+            height: env(safe-area-inset-bottom, 20px);
+        }
+    </style>
+</head>
+<body>
+    <!-- 年龄验证弹窗 -->
+    <div class="age-modal" id="ageModal">
+        <div class="age-modal-content" id="ageQuestion">
+            <div class="age-modal-icon">🔞</div>
+            <div class="age-modal-title">年龄验证</div>
+            <div class="age-modal-desc">
+                本网站包含成人内容<br>
+                仅限 <strong>18周岁及以上</strong> 成年人访问<br>
+                请确认您的年龄
+            </div>
+            <div class="age-modal-btns">
+                <button class="age-btn age-btn-yes" onclick="confirmAdult()">我已年满18周岁</button>
+                <button class="age-btn age-btn-no" onclick="denyAdult()">我未满18周岁</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 未成年提示 -->
+    <div class="age-modal underage-message" id="underageModal">
+        <div class="age-modal-content">
+            <div class="age-modal-icon">🚫</div>
+            <div class="age-modal-title">访问被拒绝</div>
+            <div class="age-modal-desc">
+                抱歉，本网站仅面向成年人<br>
+                请在年满18周岁后再来访问
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-icon">💕</div>
+            <h1>情趣游戏</h1>
+            <p>今晚，玩点不一样的</p>
+        </div>
+
+        <div class="game-list">
+            <a href="suiji.html" class="game-card">
+                <div class="game-icon">🎲</div>
+                <div class="game-info">
+                    <div class="game-title">情趣随机</div>
+                    <div class="game-desc">随机抽取情趣任务，给今晚加点惊喜</div>
+                </div>
+                <div class="game-arrow">›</div>
+            </a>
+
+            <a href="touzi.html" class="game-card">
+                <div class="game-icon">🎯</div>
+                <div class="game-info">
+                    <div class="game-title">情趣骰子</div>
+                    <div class="game-desc">掷骰子决定动作和部位，让命运来主导</div>
+                </div>
+                <div class="game-arrow">›</div>
+            </a>
+
+            <a href="zishi.html" class="game-card">
+                <div class="game-icon">💑</div>
+                <div class="game-info">
+                    <div class="game-title">随机姿势</div>
+                    <div class="game-desc">抽签决定地点、姿势、时间，探索新体验</div>
+                </div>
+                <div class="game-arrow">›</div>
+            </a>
+        </div>
+
+        <div class="footer-hint">
+            选择一个游戏，开启 <span>浪漫之夜</span>
+        </div>
+
+        <div class="safe-area-bottom"></div>
+    </div>
+
+    <script>
+        // 检查是否已验证过年龄
+        if (localStorage.getItem('ageVerified') === 'true') {
+            document.getElementById('ageModal').classList.add('hidden');
+        }
+
+        function confirmAdult() {
+            localStorage.setItem('ageVerified', 'true');
+            document.getElementById('ageModal').classList.add('hidden');
+        }
+
+        function denyAdult() {
+            document.getElementById('ageModal').classList.add('hidden');
+            document.getElementById('underageModal').classList.add('show');
+            // 阻止页面交互
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 检测 URL 中的 code 参数并更新游戏链接
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+
+            if (code) {
+                // 更新所有游戏卡片的链接，添加 code 参数
+                document.querySelectorAll('.game-card').forEach(card => {
+                    const originalHref = card.getAttribute('href');
+                    if (originalHref && !originalHref.includes('code=')) {
+                        card.setAttribute('href', `${originalHref}?code=${code}`);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
