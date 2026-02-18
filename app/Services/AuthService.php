@@ -11,50 +11,11 @@ use PDO;
 class AuthService
 {
     /**
-     * Login attempt check
-     */
-    public static function checkLoginAttempts(string $ip): bool
-    {
-        $db = DatabaseService::getInstance();
-
-        // Clean old attempts
-        $db->prepare("DELETE FROM login_attempts WHERE created_at < datetime('now', '-15 minutes')")
-           ->execute();
-
-        // Count recent failed attempts
-        $stmt = $db->prepare("
-            SELECT COUNT(*) as count
-            FROM login_attempts
-            WHERE ip_address = ? AND success = 0 AND created_at > datetime('now', '-15 minutes')
-        ");
-        $stmt->execute([$ip]);
-        $result = $stmt->fetch();
-
-        return $result['count'] < MAX_LOGIN_ATTEMPTS;
-    }
-
-    /**
-     * Record login attempt
-     */
-    public static function recordLoginAttempt(string $ip, string $username, bool $success): void
-    {
-        DatabaseService::execute(
-            "INSERT INTO login_attempts (ip_address, username, success) VALUES (?, ?, ?)",
-            [$ip, $username, $success ? 1 : 0]
-        );
-    }
-
-    /**
      * Login user
      */
     public static function login(string $username, string $password): array
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-
-        // Check login attempts
-        if (!self::checkLoginAttempts($ip)) {
-            Response::error('Too many login attempts. Please try again later.', 429);
-        }
 
         // Find admin
         $admin = DatabaseService::fetchOne(
@@ -63,7 +24,6 @@ class AuthService
         );
 
         if (!$admin || !password_verify($password, $admin['password_hash'])) {
-            self::recordLoginAttempt($ip, $username, false);
             Response::error('Invalid username or password', 401);
         }
 
@@ -76,9 +36,6 @@ class AuthService
             "INSERT INTO admin_sessions (admin_id, token, expires_at) VALUES (?, ?, ?)",
             [$admin['id'], $token, $expiresAt]
         );
-
-        // Record successful login
-        self::recordLoginAttempt($ip, $username, true);
 
         return [
             'token' => $token,

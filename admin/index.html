@@ -147,6 +147,8 @@
             <div class="sidebar-item" data-tab="dice-data">骰子数据</div>
             <div class="sidebar-item" data-tab="pose-data">姿势数据</div>
             <div class="sidebar-item" data-tab="task-data">任务库</div>
+            <div class="sidebar-section">系统管理</div>
+            <div class="sidebar-item" data-tab="system-settings">系统设置</div>
         </div>
 
         <div class="main-content">
@@ -205,6 +207,33 @@
                 </div>
                 <div class="card">
                     <div class="table-container" id="tasksTable"><div class="loading">加载中...</div></div>
+                </div>
+            </div>
+
+            <!-- 系统设置 -->
+            <div id="system-settings-tab" class="tab-content">
+                <div class="page-header">
+                    <h2 class="page-title">系统设置</h2>
+                </div>
+                <div class="card" style="max-width: 500px;">
+                    <div class="card-header"><h3>修改密码</h3></div>
+                    <div style="padding: 24px;">
+                        <form id="password-form">
+                            <div class="form-group">
+                                <label>当前密码</label>
+                                <input type="password" id="current-password" required>
+                            </div>
+                            <div class="form-group">
+                                <label>新密码</label>
+                                <input type="password" id="new-password" required>
+                            </div>
+                            <div class="form-group">
+                                <label>确认新密码</label>
+                                <input type="password" id="confirm-password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary">更新密码</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -297,6 +326,7 @@
                 case 'dice-data': await loadActions(); await loadParts(); break;
                 case 'pose-data': await loadPlaces(); await loadTimes(); await loadPoses(); break;
                 case 'task-data': await loadTasks(); break;
+                case 'system-settings': /* No data to load */ break;
             }
         }
 
@@ -802,6 +832,36 @@
             if (data.success) { showToast('删除成功'); loadData(document.querySelector('.sidebar-item.active').dataset.tab); }
             else showToast('删除失败', 'error');
         }
+
+        // Password change form handler
+        document.getElementById('password-form')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (newPassword !== confirmPassword) {
+                showToast('新密码与确认密码不匹配', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showToast('新密码长度至少为6位', 'error');
+                return;
+            }
+
+            const result = await api('/admin/settings/password', {
+                method: 'POST',
+                body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+            });
+
+            if (result.success) {
+                showToast('密码修改成功');
+                document.getElementById('password-form').reset();
+            } else {
+                showToast(result.message || '密码修改失败', 'error');
+            }
+        });
 
         async function logout() {
             await api('/auth/logout', { method: 'POST' });

@@ -123,6 +123,9 @@ $routes = [
 
     // Upload
     ['POST', '/upload', 'UploadController@upload'],
+
+    // Settings
+    ['POST', '/admin/settings/password', 'SettingsController@changePassword'],
 ];
 
 // Match route
