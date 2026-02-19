@@ -80,7 +80,7 @@ class RandomPreset extends Model
     }
 
     /**
-     * Get rounds from unified preset_rounds table (includes dice, pose, task data)
+     * Get rounds from unified preset_rounds table (includes dice, pose, task, story data)
      */
     private function getRounds(int $presetId): array
     {
@@ -97,7 +97,14 @@ class RandomPreset extends Model
                 pl.name as place_name,
                 t.name as time_name,
                 -- Task data
-                tk.description as task_description
+                tk.description as task_description,
+                -- Story data
+                mr.name as story_male_role_name,
+                fr.name as story_female_role_name,
+                sr.name as story_relationship_name,
+                si.name as story_initiative_name,
+                sb.name as story_behavior_name,
+                sa.name as story_action_name
             FROM preset_rounds r
             LEFT JOIN dice_actions da ON r.dice_action_id = da.id
             LEFT JOIN dice_parts dp ON r.dice_part_id = dp.id
@@ -105,6 +112,12 @@ class RandomPreset extends Model
             LEFT JOIN zishi_places pl ON r.place_id = pl.id
             LEFT JOIN zishi_times t ON r.time_id = t.id
             LEFT JOIN tasks tk ON r.task_id = tk.id
+            LEFT JOIN story_male_roles mr ON r.story_male_role_id = mr.id
+            LEFT JOIN story_female_roles fr ON r.story_female_role_id = fr.id
+            LEFT JOIN story_relationships sr ON r.story_relationship_id = sr.id
+            LEFT JOIN story_initiatives si ON r.story_initiative_id = si.id
+            LEFT JOIN story_behaviors sb ON r.story_behavior_id = sb.id
+            LEFT JOIN story_actions sa ON r.story_action_id = sa.id
             WHERE r.preset_id = ?
             ORDER BY r.round_number ASC
         ", [$presetId]);
@@ -124,8 +137,11 @@ class RandomPreset extends Model
                     preset_id, round_number,
                     dice_action_id, dice_part_id,
                     pose_id, place_id, time_id,
-                    task_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    task_id,
+                    story_male_role_id, story_female_role_id,
+                    story_relationship_id, story_initiative_id,
+                    story_behavior_id, story_action_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     $presetId,
                     $round['round_number'] ?? 0,
@@ -134,7 +150,13 @@ class RandomPreset extends Model
                     $round['pose_id'] ?? null,
                     $round['place_id'] ?? null,
                     $round['time_id'] ?? null,
-                    $round['task_id'] ?? null
+                    $round['task_id'] ?? null,
+                    $round['story_male_role_id'] ?? null,
+                    $round['story_female_role_id'] ?? null,
+                    $round['story_relationship_id'] ?? null,
+                    $round['story_initiative_id'] ?? null,
+                    $round['story_behavior_id'] ?? null,
+                    $round['story_action_id'] ?? null
                 ]
             );
         }

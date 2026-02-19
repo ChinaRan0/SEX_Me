@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>随机剧情</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            text-align: center;
+            padding: 30px 0;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #ff6b6b, #ff8e8e);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        header p {
+            color: #888;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            z-index: 100;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:active {
+            transform: scale(0.9);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 25px 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .story-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .story-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .story-item.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .story-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .story-value {
+            font-size: 16px;
+            font-weight: 500;
+            color: #e0e0e0;
+            min-height: 24px;
+            display: flex;
+            align-items: center;
+        }
+
+        .story-value.male { color: #64b5f6; }
+        .story-value.female { color: #f06292; }
+        .story-value.relationship { color: #ffb74d; }
+        .story-value.initiative { color: #ba68c8; }
+        .story-value.behavior { color: #4db6ac; }
+        .story-value.action { color: #ff6b6b; }
+
+        .btn-random {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+            border: none;
+            border-radius: 50px;
+            padding: 18px 40px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(255, 107, 107, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .btn-random:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-random.rolling {
+            animation: pulse 0.3s ease infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .btn-icon {
+            font-size: 20px;
+            transition: transform 0.3s ease;
+        }
+
+        .btn-random.rolling .btn-icon {
+            animation: spin 0.3s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .placeholder-text {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .rolling-text {
+            animation: textRoll 0.1s ease infinite;
+        }
+
+        @keyframes textRoll {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .safe-area-bottom {
+            height: env(safe-area-inset-bottom, 20px);
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-btn">‹</a>
+    <div class="container">
+        <header>
+            <h1>随机剧情</h1>
+            <p>点击按钮，生成精彩剧情</p>
+        </header>
+
+        <div class="card">
+            <div class="story-grid">
+                <div class="story-item">
+                    <div class="story-label">男方身份</div>
+                    <div class="story-value male" id="maleRole">
+                        <span class="placeholder-text">等待抽取...</span>
+                    </div>
+                </div>
+                <div class="story-item">
+                    <div class="story-label">女方身份</div>
+                    <div class="story-value female" id="femaleRole">
+                        <span class="placeholder-text">等待抽取...</span>
+                    </div>
+                </div>
+                <div class="story-item">
+                    <div class="story-label">两人关系</div>
+                    <div class="story-value relationship" id="relationship">
+                        <span class="placeholder-text">等待抽取...</span>
+                    </div>
+                </div>
+                <div class="story-item">
+                    <div class="story-label">主动权</div>
+                    <div class="story-value initiative" id="initiative">
+                        <span class="placeholder-text">等待抽取...</span>
+                    </div>
+                </div>
+                <div class="story-item">
+                    <div class="story-label">行为</div>
+                    <div class="story-value behavior" id="behavior">
+                        <span class="placeholder-text">等待抽取...</span>
+                    </div>
+                </div>
+                <div class="story-item">
+                    <div class="story-label">动作</div>
+                    <div class="story-value action" id="action">
+                        <span class="placeholder-text">等待抽取...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn-random" id="btnRandom" onclick="randomStory()">
+            <span class="btn-icon">📖</span>
+            <span>生成剧情</span>
+        </button>
+
+        <div class="safe-area-bottom"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'api';
+        const urlParams = new URLSearchParams(window.location.search);
+        const presetCode = urlParams.get('code');
+
+        let storyData = [];
+        let preset = null;
+        let currentRound = 0;
+        let isRolling = false;
+
+        function setupBackButton() {
+            const backBtn = document.querySelector('.back-btn');
+            if (!backBtn) return;
+
+            backBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.history.length > 1) {
+                    window.history.back();
+                } else if (presetCode) {
+                    window.location.href = `index.html?code=${presetCode}`;
+                } else {
+                    window.location.href = 'index.html';
+                }
+            });
+        }
+
+        async function loadStoryData() {
+            try {
+                const response = await fetch(`${API_BASE}/stories`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const result = await response.json();
+                if (result.success) {
+                    storyData = result.data;
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('加载数据失败:', error);
+                storyData = {
+                    maleRoles: ['霸道总裁', '温柔学长'],
+                    femaleRoles: ['可爱学妹', '高冷女神'],
+                    relationships: ['陌生人', '暗恋关系'],
+                    initiatives: ['男方主动', '女方主动'],
+                    behaviors: ['温柔体贴', '霸道强势'],
+                    actions: ['拥抱', '亲吻']
+                };
+            }
+
+            if (presetCode) {
+                try {
+                    const response = await fetch(`${API_BASE}/preset/${presetCode}`);
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}`);
+                    }
+                    const data = await response.json();
+                    if (data.success) {
+                        preset = data.data;
+                        const savedRound = localStorage.getItem(`preset_round_${presetCode}_story`);
+                        currentRound = savedRound ? parseInt(savedRound) : 0;
+                    }
+                } catch (e) {
+                    console.error('加载预设失败:', e);
+                }
+            }
+        }
+
+        function randomStory() {
+            if (isRolling) return;
+
+            const btn = document.getElementById('btnRandom');
+            const elements = {
+                maleRole: document.getElementById('maleRole'),
+                femaleRole: document.getElementById('femaleRole'),
+                relationship: document.getElementById('relationship'),
+                initiative: document.getElementById('initiative'),
+                behavior: document.getElementById('behavior'),
+                action: document.getElementById('action')
+            };
+
+            isRolling = true;
+            btn.classList.add('rolling');
+
+            let finalStory;
+            if (preset && preset.rounds_data && currentRound < preset.rounds_data.length) {
+                finalStory = {
+                    maleRole: preset.rounds_data[currentRound].story_male_role_name,
+                    femaleRole: preset.rounds_data[currentRound].story_female_role_name,
+                    relationship: preset.rounds_data[currentRound].story_relationship_name,
+                    initiative: preset.rounds_data[currentRound].story_initiative_name,
+                    behavior: preset.rounds_data[currentRound].story_behavior_name,
+                    action: preset.rounds_data[currentRound].story_action_name
+                };
+                currentRound++;
+                if (presetCode) {
+                    localStorage.setItem(`preset_round_${presetCode}_story`, currentRound.toString());
+                }
+            } else {
+                finalStory = {
+                    maleRole: storyData.maleRoles?.[Math.floor(Math.random() * (storyData.maleRoles?.length || 1))] || '随机身份',
+                    femaleRole: storyData.femaleRoles?.[Math.floor(Math.random() * (storyData.femaleRoles?.length || 1))] || '随机身份',
+                    relationship: storyData.relationships?.[Math.floor(Math.random() * (storyData.relationships?.length || 1))] || '随机关系',
+                    initiative: storyData.initiatives?.[Math.floor(Math.random() * (storyData.initiatives?.length || 1))] || '随机主动',
+                    behavior: storyData.behaviors?.[Math.floor(Math.random() * (storyData.behaviors?.length || 1))] || '随机行为',
+                    action: storyData.actions?.[Math.floor(Math.random() * (storyData.actions?.length || 1))] || '随机动作'
+                };
+            }
+
+            let rollCount = 0;
+            const maxRolls = 10;
+            const rollInterval = setInterval(() => {
+                Object.keys(elements).forEach(key => {
+                    elements[key].innerHTML = getRandomValue(key);
+                    elements[key].classList.add('rolling-text');
+                });
+
+                rollCount++;
+
+                if (rollCount >= maxRolls) {
+                    clearInterval(rollInterval);
+
+                    Object.keys(elements).forEach(key => {
+                        elements[key].classList.remove('rolling-text');
+                        elements[key].innerHTML = finalStory[key] || '暂无';
+                    });
+
+                    isRolling = false;
+                    btn.classList.remove('rolling');
+
+                    if (navigator.vibrate) {
+                        navigator.vibrate(100);
+                    }
+                }
+            }, 100);
+        }
+
+        function getRandomValue(key) {
+            const arrays = {
+                maleRole: storyData.maleRoles || ['身份1'],
+                femaleRole: storyData.femaleRoles || ['身份2'],
+                relationship: storyData.relationships || ['关系'],
+                initiative: storyData.initiatives || ['主动'],
+                behavior: storyData.behaviors || ['行为'],
+                action: storyData.actions || ['动作']
+            };
+            const arr = arrays[key];
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStoryData();
+            setupBackButton();
+        });
+    </script>
+</body>
+</html>

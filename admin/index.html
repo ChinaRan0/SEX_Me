@@ -76,15 +76,17 @@
         .share-url-item a:hover { text-decoration: underline; }
 
         /* Round editor - 分列布局 */
-        .round-columns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; }
+        .round-columns { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 20px; }
         .round-column { background: #fafafa; border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; }
         .round-column.dice { border-top: 3px solid #1565c0; }
         .round-column.pose { border-top: 3px solid #c2185b; }
         .round-column.task { border-top: 3px solid #2e7d32; }
+        .round-column.story { border-top: 3px solid #7b1fa2; }
         .column-title { font-weight: 600; font-size: 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
         .column-title.dice { color: #1565c0; }
         .column-title.pose { color: #c2185b; }
         .column-title.task { color: #2e7d32; }
+        .column-title.story { color: #7b1fa2; }
         .round-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .round-row:last-child { margin-bottom: 0; }
         .round-label { min-width: 45px; font-size: 13px; color: #666; }
@@ -146,9 +148,8 @@
             <div class="sidebar-section">数据管理</div>
             <div class="sidebar-item" data-tab="dice-data">骰子数据</div>
             <div class="sidebar-item" data-tab="pose-data">姿势数据</div>
+            <div class="sidebar-item" data-tab="story-data">剧情数据</div>
             <div class="sidebar-item" data-tab="task-data">任务库</div>
-            <div class="sidebar-section">系统管理</div>
-            <div class="sidebar-item" data-tab="system-settings">系统设置</div>
         </div>
 
         <div class="main-content">
@@ -199,6 +200,37 @@
                 </div>
             </div>
 
+            <!-- 剧情数据 -->
+            <div id="story-data-tab" class="tab-content">
+                <div class="page-header"><h2 class="page-title">剧情数据管理</h2></div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px;">
+                    <div class="card">
+                        <div class="card-header"><h3>男方身份</h3><button class="btn btn-primary btn-sm" onclick="openModal('story-male-roles')">添加</button></div>
+                        <div class="table-container" id="maleRolesTable"><div class="loading">加载中...</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>女方身份</h3><button class="btn btn-primary btn-sm" onclick="openModal('story-female-roles')">添加</button></div>
+                        <div class="table-container" id="femaleRolesTable"><div class="loading">加载中...</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>两人关系</h3><button class="btn btn-primary btn-sm" onclick="openModal('story-relationships')">添加</button></div>
+                        <div class="table-container" id="relationshipsTable"><div class="loading">加载中...</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>主动权</h3><button class="btn btn-primary btn-sm" onclick="openModal('story-initiatives')">添加</button></div>
+                        <div class="table-container" id="initiativesTable"><div class="loading">加载中...</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>行为</h3><button class="btn btn-primary btn-sm" onclick="openModal('story-behaviors')">添加</button></div>
+                        <div class="table-container" id="behaviorsTable"><div class="loading">加载中...</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-header"><h3>动作</h3><button class="btn btn-primary btn-sm" onclick="openModal('story-actions')">添加</button></div>
+                        <div class="table-container" id="storyActionsTable"><div class="loading">加载中...</div></div>
+                    </div>
+                </div>
+            </div>
+
             <!-- 任务库 -->
             <div id="task-data-tab" class="tab-content">
                 <div class="page-header">
@@ -207,33 +239,6 @@
                 </div>
                 <div class="card">
                     <div class="table-container" id="tasksTable"><div class="loading">加载中...</div></div>
-                </div>
-            </div>
-
-            <!-- 系统设置 -->
-            <div id="system-settings-tab" class="tab-content">
-                <div class="page-header">
-                    <h2 class="page-title">系统设置</h2>
-                </div>
-                <div class="card" style="max-width: 500px;">
-                    <div class="card-header"><h3>修改密码</h3></div>
-                    <div style="padding: 24px;">
-                        <form id="password-form">
-                            <div class="form-group">
-                                <label>当前密码</label>
-                                <input type="password" id="current-password" required>
-                            </div>
-                            <div class="form-group">
-                                <label>新密码</label>
-                                <input type="password" id="new-password" required>
-                            </div>
-                            <div class="form-group">
-                                <label>确认新密码</label>
-                                <input type="password" id="confirm-password" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary">更新密码</button>
-                        </form>
-                    </div>
                 </div>
             </div>
         </div>
@@ -325,8 +330,8 @@
                 case 'presets': await loadPresets(); break;
                 case 'dice-data': await loadActions(); await loadParts(); break;
                 case 'pose-data': await loadPlaces(); await loadTimes(); await loadPoses(); break;
+                case 'story-data': await loadMaleRoles(); await loadFemaleRoles(); await loadRelationships(); await loadInitiatives(); await loadBehaviors(); await loadStoryActions(); break;
                 case 'task-data': await loadTasks(); break;
-                case 'system-settings': /* No data to load */ break;
             }
         }
 
@@ -382,6 +387,11 @@
                                 <span>📝 任务：</span>
                                 <a href="${baseUrl}suiji.html?code=${preset.share_code}" target="_blank">${baseUrl}suiji.html?code=${preset.share_code}</a>
                                 <button class="btn btn-sm btn-secondary" onclick="copyUrl('${baseUrl}suiji.html?code=${preset.share_code}')">复制</button>
+                            </div>
+                            <div class="share-url-item">
+                                <span>📖 剧情：</span>
+                                <a href="${baseUrl}story.html?code=${preset.share_code}" target="_blank">${baseUrl}story.html?code=${preset.share_code}</a>
+                                <button class="btn btn-sm btn-secondary" onclick="copyUrl('${baseUrl}story.html?code=${preset.share_code}')">复制</button>
                             </div>
                         </div>
                     </div>
@@ -551,6 +561,47 @@
 
             html += `
                     </div>
+                    <!-- 剧情列 -->
+                    <div class="round-column story">
+                        <div class="column-title story">📖 剧情</div>
+            `;
+
+            // 剧情列 - 6个下拉框
+            for (let i = 1; i <= count; i++) {
+                const rd = roundsData?.[i - 1] || {};
+                html += `
+                    <div class="round-row" style="flex-wrap: wrap;">
+                        <span class="round-label" style="width: 100%; margin-bottom: 4px;">第${i}轮</span>
+                        <select id="maleRole_${i}" style="flex: 1; min-width: 60px; font-size: 11px; padding: 4px;">
+                            <option value="">男方</option>
+                            ${formData.maleRoles?.map(m => `<option value="${m.id}" ${rd.story_male_role_id == m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
+                        </select>
+                        <select id="femaleRole_${i}" style="flex: 1; min-width: 60px; font-size: 11px; padding: 4px;">
+                            <option value="">女方</option>
+                            ${formData.femaleRoles?.map(f => `<option value="${f.id}" ${rd.story_female_role_id == f.id ? 'selected' : ''}>${f.name}</option>`).join('')}
+                        </select>
+                        <select id="relationship_${i}" style="flex: 1; min-width: 60px; font-size: 11px; padding: 4px;">
+                            <option value="">关系</option>
+                            ${formData.relationships?.map(r => `<option value="${r.id}" ${rd.story_relationship_id == r.id ? 'selected' : ''}>${r.name}</option>`).join('')}
+                        </select>
+                        <select id="initiative_${i}" style="flex: 1; min-width: 60px; font-size: 11px; padding: 4px;">
+                            <option value="">主动</option>
+                            ${formData.initiatives?.map(i => `<option value="${i.id}" ${rd.story_initiative_id == i.id ? 'selected' : ''}>${i.name}</option>`).join('')}
+                        </select>
+                        <select id="behavior_${i}" style="flex: 1; min-width: 60px; font-size: 11px; padding: 4px;">
+                            <option value="">行为</option>
+                            ${formData.behaviors?.map(b => `<option value="${b.id}" ${rd.story_behavior_id == b.id ? 'selected' : ''}>${b.name}</option>`).join('')}
+                        </select>
+                        <select id="storyAction_${i}" style="flex: 1; min-width: 60px; font-size: 11px; padding: 4px;">
+                            <option value="">动作</option>
+                            ${formData.storyActions?.map(s => `<option value="${s.id}" ${rd.story_action_id == s.id ? 'selected' : ''}>${s.name}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+            }
+
+            html += `
+                    </div>
                 </div>
             `;
 
@@ -679,13 +730,25 @@
                 const placeEl = document.getElementById(`place_${i}`);
                 const timeEl = document.getElementById(`time_${i}`);
                 const taskEl = document.getElementById(`task_${i}`);
+                const maleRoleEl = document.getElementById(`maleRole_${i}`);
+                const femaleRoleEl = document.getElementById(`femaleRole_${i}`);
+                const relationshipEl = document.getElementById(`relationship_${i}`);
+                const initiativeEl = document.getElementById(`initiative_${i}`);
+                const behaviorEl = document.getElementById(`behavior_${i}`);
+                const storyActionEl = document.getElementById(`storyAction_${i}`);
 
                 const actionId = actionEl?.value;
                 const partId = partEl?.value;
                 const poseId = poseEl?.value;
                 const placeId = placeEl?.value;
                 const timeId = timeEl?.value;
-                const taskId = taskEl?.dataset?.id;  // 使用 dataset.id 获取任务 ID
+                const taskId = taskEl?.dataset?.id;
+                const maleRoleId = maleRoleEl?.value;
+                const femaleRoleId = femaleRoleEl?.value;
+                const relationshipId = relationshipEl?.value;
+                const initiativeId = initiativeEl?.value;
+                const behaviorId = behaviorEl?.value;
+                const storyActionId = storyActionEl?.value;
 
                 roundsData.push({
                     round_number: i,
@@ -694,7 +757,13 @@
                     pose_id: poseId ? parseInt(poseId) : null,
                     place_id: placeId ? parseInt(placeId) : null,
                     time_id: timeId ? parseInt(timeId) : null,
-                    task_id: taskId ? parseInt(taskId) : null
+                    task_id: taskId ? parseInt(taskId) : null,
+                    story_male_role_id: maleRoleId ? parseInt(maleRoleId) : null,
+                    story_female_role_id: femaleRoleId ? parseInt(femaleRoleId) : null,
+                    story_relationship_id: relationshipId ? parseInt(relationshipId) : null,
+                    story_initiative_id: initiativeId ? parseInt(initiativeId) : null,
+                    story_behavior_id: behaviorId ? parseInt(behaviorId) : null,
+                    story_action_id: storyActionId ? parseInt(storyActionId) : null
                 });
             }
 
@@ -767,10 +836,26 @@
             }
         }
 
+        // Story data load functions
+        async function loadMaleRoles() { const d = await api('/admin/stories/male-roles'); if (d.success) renderTable('maleRolesTable', d.data, 'story-male-roles'); }
+        async function loadFemaleRoles() { const d = await api('/admin/stories/female-roles'); if (d.success) renderTable('femaleRolesTable', d.data, 'story-female-roles'); }
+        async function loadRelationships() { const d = await api('/admin/stories/relationships'); if (d.success) renderTable('relationshipsTable', d.data, 'story-relationships'); }
+        async function loadInitiatives() { const d = await api('/admin/stories/initiatives'); if (d.success) renderTable('initiativesTable', d.data, 'story-initiatives'); }
+        async function loadBehaviors() { const d = await api('/admin/stories/behaviors'); if (d.success) renderTable('behaviorsTable', d.data, 'story-behaviors'); }
+        async function loadStoryActions() { const d = await api('/admin/stories/actions'); if (d.success) renderTable('storyActionsTable', d.data, 'story-actions'); }
+
         function openModal(type, data = null) {
             currentType = type;
             currentEditId = data ? data.id : null;
-            const titles = { action: '动作', part: '部位', place: '地点', time: '时间', pose: '姿势', task: '任务' };
+            const titles = {
+                action: '动作', part: '部位', place: '地点', time: '时间', pose: '姿势', task: '任务',
+                'story-male-roles': '男方身份',
+                'story-female-roles': '女方身份',
+                'story-relationships': '两人关系',
+                'story-initiatives': '主动权',
+                'story-behaviors': '行为',
+                'story-actions': '动作'
+            };
             document.getElementById('modalTitle').textContent = (currentEditId ? '编辑' : '添加') + titles[type];
 
             let formHtml = '';
@@ -788,6 +873,7 @@
                     <div class="form-group checkbox-group"><input type="checkbox" id="itemActive" ${data?.is_active !== 0 ? 'checked' : ''}><label>启用</label></div>
                 `;
             } else {
+                // All other types including story types
                 formHtml = `
                     <div class="form-group"><label>名称</label><input type="text" id="itemName" value="${data?.name || ''}" required></div>
                     <div class="form-group"><label>排序</label><input type="number" id="itemSort" value="${data?.sort_order || 0}"></div>
@@ -801,13 +887,33 @@
         function closeModal() { document.getElementById('modal').classList.remove('active'); currentType = ''; currentEditId = null; }
 
         async function editItem(type, id) {
-            const endpoints = { action: '/admin/dice/actions', part: '/admin/dice/parts', place: '/admin/poses/places', time: '/admin/poses/times', pose: '/admin/poses', task: '/admin/tasks' };
+            const endpoints = {
+                action: '/admin/dice/actions', part: '/admin/dice/parts',
+                place: '/admin/poses/places', time: '/admin/poses/times',
+                pose: '/admin/poses', task: '/admin/tasks',
+                'story-male-roles': '/admin/stories/male-roles',
+                'story-female-roles': '/admin/stories/female-roles',
+                'story-relationships': '/admin/stories/relationships',
+                'story-initiatives': '/admin/stories/initiatives',
+                'story-behaviors': '/admin/stories/behaviors',
+                'story-actions': '/admin/stories/actions'
+            };
             const d = await api(`${endpoints[type]}/${id}`);
             if (d.success) openModal(type, d.data);
         }
 
         async function saveItem() {
-            const endpoints = { action: '/admin/dice/actions', part: '/admin/dice/parts', place: '/admin/poses/places', time: '/admin/poses/times', pose: '/admin/poses', task: '/admin/tasks' };
+            const endpoints = {
+                action: '/admin/dice/actions', part: '/admin/dice/parts',
+                place: '/admin/poses/places', time: '/admin/poses/times',
+                pose: '/admin/poses', task: '/admin/tasks',
+                'story-male-roles': '/admin/stories/male-roles',
+                'story-female-roles': '/admin/stories/female-roles',
+                'story-relationships': '/admin/stories/relationships',
+                'story-initiatives': '/admin/stories/initiatives',
+                'story-behaviors': '/admin/stories/behaviors',
+                'story-actions': '/admin/stories/actions'
+            };
             let body = { is_active: document.getElementById('itemActive')?.checked ? 1 : 0 };
 
             if (currentType === 'task') {
@@ -827,41 +933,21 @@
 
         async function deleteItem(type, id) {
             if (!confirm('确定删除？')) return;
-            const endpoints = { action: '/admin/dice/actions', part: '/admin/dice/parts', place: '/admin/poses/places', time: '/admin/poses/times', pose: '/admin/poses', task: '/admin/tasks' };
+            const endpoints = {
+                action: '/admin/dice/actions', part: '/admin/dice/parts',
+                place: '/admin/poses/places', time: '/admin/poses/times',
+                pose: '/admin/poses', task: '/admin/tasks',
+                'story-male-roles': '/admin/stories/male-roles',
+                'story-female-roles': '/admin/stories/female-roles',
+                'story-relationships': '/admin/stories/relationships',
+                'story-initiatives': '/admin/stories/initiatives',
+                'story-behaviors': '/admin/stories/behaviors',
+                'story-actions': '/admin/stories/actions'
+            };
             const data = await api(`${endpoints[type]}/${id}`, { method: 'DELETE' });
             if (data.success) { showToast('删除成功'); loadData(document.querySelector('.sidebar-item.active').dataset.tab); }
             else showToast('删除失败', 'error');
         }
-
-        // Password change form handler
-        document.getElementById('password-form')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const currentPassword = document.getElementById('current-password').value;
-            const newPassword = document.getElementById('new-password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-
-            if (newPassword !== confirmPassword) {
-                showToast('新密码与确认密码不匹配', 'error');
-                return;
-            }
-
-            if (newPassword.length < 6) {
-                showToast('新密码长度至少为6位', 'error');
-                return;
-            }
-
-            const result = await api('/admin/settings/password', {
-                method: 'POST',
-                body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
-            });
-
-            if (result.success) {
-                showToast('密码修改成功');
-                document.getElementById('password-form').reset();
-            } else {
-                showToast(result.message || '密码修改失败', 'error');
-            }
-        });
 
         async function logout() {
             await api('/auth/logout', { method: 'POST' });

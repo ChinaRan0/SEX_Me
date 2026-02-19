@@ -9,6 +9,12 @@ use App\Models\ZishiPose;
 use App\Models\ZishiPlace;
 use App\Models\ZishiTime;
 use App\Models\Task;
+use App\Models\StoryMaleRole;
+use App\Models\StoryFemaleRole;
+use App\Models\StoryRelationship;
+use App\Models\StoryInitiative;
+use App\Models\StoryBehavior;
+use App\Models\StoryAction;
 use App\Helpers\Response;
 use App\Services\AuthService;
 
@@ -24,6 +30,12 @@ class PresetController extends Controller
     private ZishiPlace $placeModel;
     private ZishiTime $timeModel;
     private Task $taskModel;
+    private StoryMaleRole $storyMaleRoleModel;
+    private StoryFemaleRole $storyFemaleRoleModel;
+    private StoryRelationship $storyRelationshipModel;
+    private StoryInitiative $storyInitiativeModel;
+    private StoryBehavior $storyBehaviorModel;
+    private StoryAction $storyActionModel;
 
     public function __construct()
     {
@@ -34,6 +46,12 @@ class PresetController extends Controller
         $this->placeModel = new ZishiPlace();
         $this->timeModel = new ZishiTime();
         $this->taskModel = new Task();
+        $this->storyMaleRoleModel = new StoryMaleRole();
+        $this->storyFemaleRoleModel = new StoryFemaleRole();
+        $this->storyRelationshipModel = new StoryRelationship();
+        $this->storyInitiativeModel = new StoryInitiative();
+        $this->storyBehaviorModel = new StoryBehavior();
+        $this->storyActionModel = new StoryAction();
     }
 
     /**
@@ -156,7 +174,7 @@ class PresetController extends Controller
 
     /**
      * Generate random rounds (admin helper)
-     * Generates random data for all three game types simultaneously
+     * Generates random data for all four game types simultaneously
      */
     public function generateRandom(): void
     {
@@ -172,6 +190,12 @@ class PresetController extends Controller
         $places = $this->placeModel->getActive();
         $times = $this->timeModel->getActive();
         $tasks = $this->taskModel->getActive();
+        $maleRoles = $this->storyMaleRoleModel->getActive();
+        $femaleRoles = $this->storyFemaleRoleModel->getActive();
+        $relationships = $this->storyRelationshipModel->getActive();
+        $initiatives = $this->storyInitiativeModel->getActive();
+        $behaviors = $this->storyBehaviorModel->getActive();
+        $storyActions = $this->storyActionModel->getActive();
 
         // Validate we have enough data
         if (empty($actions) || empty($parts)) {
@@ -182,6 +206,9 @@ class PresetController extends Controller
         }
         if (empty($tasks)) {
             Response::error('任务数据不足，请先添加任务', 400);
+        }
+        if (empty($maleRoles) || empty($femaleRoles) || empty($relationships) || empty($initiatives) || empty($behaviors) || empty($storyActions)) {
+            Response::error('剧情数据不足，请先添加所有剧情元素', 400);
         }
 
         $roundsData = [];
@@ -197,7 +224,14 @@ class PresetController extends Controller
                 'place_id' => $places[array_rand($places)]['id'],
                 'time_id' => $times[array_rand($times)]['id'],
                 // Task data
-                'task_id' => $tasks[array_rand($tasks)]['id']
+                'task_id' => $tasks[array_rand($tasks)]['id'],
+                // Story data
+                'story_male_role_id' => $maleRoles[array_rand($maleRoles)]['id'],
+                'story_female_role_id' => $femaleRoles[array_rand($femaleRoles)]['id'],
+                'story_relationship_id' => $relationships[array_rand($relationships)]['id'],
+                'story_initiative_id' => $initiatives[array_rand($initiatives)]['id'],
+                'story_behavior_id' => $behaviors[array_rand($behaviors)]['id'],
+                'story_action_id' => $storyActions[array_rand($storyActions)]['id']
             ];
         }
 
@@ -218,7 +252,13 @@ class PresetController extends Controller
             'poses' => $this->poseModel->getActive(),
             'places' => $this->placeModel->getActive(),
             'times' => $this->timeModel->getActive(),
-            'tasks' => $this->taskModel->getActive()
+            'tasks' => $this->taskModel->getActive(),
+            'maleRoles' => $this->storyMaleRoleModel->getActive(),
+            'femaleRoles' => $this->storyFemaleRoleModel->getActive(),
+            'relationships' => $this->storyRelationshipModel->getActive(),
+            'initiatives' => $this->storyInitiativeModel->getActive(),
+            'behaviors' => $this->storyBehaviorModel->getActive(),
+            'storyActions' => $this->storyActionModel->getActive()
         ];
 
         Response::success($data);

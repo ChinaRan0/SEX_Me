@@ -61,6 +61,8 @@ $routes = [
     ['GET', '/poses', 'PoseController@index'],
     ['GET', '/tasks', 'TaskController@index'],
     ['GET', '/tasks/random', 'TaskController@random'],
+    ['GET', '/stories', 'StoryController@index'],
+    ['GET', '/stories/random', 'StoryController@random'],
 
     // Preset public route
     ['GET', '/preset/([a-zA-Z0-9]+)', 'PresetController@getByCode'],
@@ -121,11 +123,53 @@ $routes = [
     ['PUT', '/admin/presets/([0-9]+)', 'PresetController@update'],
     ['DELETE', '/admin/presets/([0-9]+)', 'PresetController@delete'],
 
+    // Admin - Stories (随机剧情)
+    ['GET', '/admin/stories', 'StoryController@list'],
+
+    // Admin - Story Male Roles
+    ['GET', '/admin/stories/male-roles', 'StoryController@getMaleRoles'],
+    ['GET', '/admin/stories/male-roles/([0-9]+)', 'StoryController@showMaleRole'],
+    ['POST', '/admin/stories/male-roles', 'StoryController@createMaleRole'],
+    ['PUT', '/admin/stories/male-roles/([0-9]+)', 'StoryController@updateMaleRole'],
+    ['DELETE', '/admin/stories/male-roles/([0-9]+)', 'StoryController@deleteMaleRole'],
+
+    // Admin - Story Female Roles
+    ['GET', '/admin/stories/female-roles', 'StoryController@getFemaleRoles'],
+    ['GET', '/admin/stories/female-roles/([0-9]+)', 'StoryController@showFemaleRole'],
+    ['POST', '/admin/stories/female-roles', 'StoryController@createFemaleRole'],
+    ['PUT', '/admin/stories/female-roles/([0-9]+)', 'StoryController@updateFemaleRole'],
+    ['DELETE', '/admin/stories/female-roles/([0-9]+)', 'StoryController@deleteFemaleRole'],
+
+    // Admin - Story Relationships
+    ['GET', '/admin/stories/relationships', 'StoryController@getRelationships'],
+    ['GET', '/admin/stories/relationships/([0-9]+)', 'StoryController@showRelationship'],
+    ['POST', '/admin/stories/relationships', 'StoryController@createRelationship'],
+    ['PUT', '/admin/stories/relationships/([0-9]+)', 'StoryController@updateRelationship'],
+    ['DELETE', '/admin/stories/relationships/([0-9]+)', 'StoryController@deleteRelationship'],
+
+    // Admin - Story Initiatives
+    ['GET', '/admin/stories/initiatives', 'StoryController@getInitiatives'],
+    ['GET', '/admin/stories/initiatives/([0-9]+)', 'StoryController@showInitiative'],
+    ['POST', '/admin/stories/initiatives', 'StoryController@createInitiative'],
+    ['PUT', '/admin/stories/initiatives/([0-9]+)', 'StoryController@updateInitiative'],
+    ['DELETE', '/admin/stories/initiatives/([0-9]+)', 'StoryController@deleteInitiative'],
+
+    // Admin - Story Behaviors
+    ['GET', '/admin/stories/behaviors', 'StoryController@getBehaviors'],
+    ['GET', '/admin/stories/behaviors/([0-9]+)', 'StoryController@showBehavior'],
+    ['POST', '/admin/stories/behaviors', 'StoryController@createBehavior'],
+    ['PUT', '/admin/stories/behaviors/([0-9]+)', 'StoryController@updateBehavior'],
+    ['DELETE', '/admin/stories/behaviors/([0-9]+)', 'StoryController@deleteBehavior'],
+
+    // Admin - Story Actions
+    ['GET', '/admin/stories/actions', 'StoryController@getActions'],
+    ['GET', '/admin/stories/actions/([0-9]+)', 'StoryController@showAction'],
+    ['POST', '/admin/stories/actions', 'StoryController@createAction'],
+    ['PUT', '/admin/stories/actions/([0-9]+)', 'StoryController@updateAction'],
+    ['DELETE', '/admin/stories/actions/([0-9]+)', 'StoryController@deleteAction'],
+
     // Upload
     ['POST', '/upload', 'UploadController@upload'],
-
-    // Settings
-    ['POST', '/admin/settings/password', 'SettingsController@changePassword'],
 ];
 
 // Match route
