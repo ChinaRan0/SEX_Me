@@ -71,6 +71,7 @@ $routes = [
     ['POST', '/auth/login', 'AuthController@login'],
     ['POST', '/auth/logout', 'AuthController@logout'],
     ['GET', '/auth/me', 'AuthController@me'],
+    ['POST', '/auth/change-password', 'AuthController@changePassword'],
 
     // Admin - Dice Actions
     ['GET', '/admin/dice/actions', 'DiceController@getActions'],

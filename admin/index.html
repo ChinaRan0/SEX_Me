@@ -150,6 +150,8 @@
             <div class="sidebar-item" data-tab="pose-data">姿势数据</div>
             <div class="sidebar-item" data-tab="story-data">剧情数据</div>
             <div class="sidebar-item" data-tab="task-data">任务库</div>
+            <div class="sidebar-section">系统设置</div>
+            <div class="sidebar-item" data-tab="settings">修改密码</div>
         </div>
 
         <div class="main-content">
@@ -239,6 +241,30 @@
                 </div>
                 <div class="card">
                     <div class="table-container" id="tasksTable"><div class="loading">加载中...</div></div>
+                </div>
+            </div>
+
+            <!-- 系统设置 -->
+            <div id="settings-tab" class="tab-content">
+                <div class="page-header"><h2 class="page-title">修改密码</h2></div>
+                <div class="card" style="max-width: 500px;">
+                    <div class="modal-body">
+                        <form id="passwordForm" onsubmit="changePassword(event)">
+                            <div class="form-group">
+                                <label>当前密码</label>
+                                <input type="password" id="oldPassword" required>
+                            </div>
+                            <div class="form-group">
+                                <label>新密码</label>
+                                <input type="password" id="newPassword" required minlength="6">
+                            </div>
+                            <div class="form-group">
+                                <label>确认新密码</label>
+                                <input type="password" id="confirmPassword" required minlength="6">
+                            </div>
+                            <button type="submit" class="btn btn-primary">保存修改</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
@@ -332,6 +358,8 @@
                 case 'pose-data': await loadPlaces(); await loadTimes(); await loadPoses(); break;
                 case 'story-data': await loadMaleRoles(); await loadFemaleRoles(); await loadRelationships(); await loadInitiatives(); await loadBehaviors(); await loadStoryActions(); break;
                 case 'task-data': await loadTasks(); break;
+                case 'settings': // No data to load
+                    break;
             }
         }
 
@@ -953,6 +981,30 @@
             await api('/auth/logout', { method: 'POST' });
             localStorage.clear();
             window.location.href = 'login.html';
+        }
+
+        async function changePassword(e) {
+            e.preventDefault();
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            if (newPassword !== confirmPassword) {
+                showToast('两次输入的密码不一致', 'error');
+                return;
+            }
+
+            const data = await api('/auth/change-password', {
+                method: 'POST',
+                body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+            });
+
+            if (data.success) {
+                showToast('密码修改成功，请重新登录');
+                setTimeout(() => logout(), 1500);
+            } else {
+                showToast(data.message || '修改失败', 'error');
+            }
         }
 
         // Initial load
